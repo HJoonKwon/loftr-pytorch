@@ -51,7 +51,7 @@ class FeedForward(nn.Module):
         return self.net(x)
 
 
-class FeedForwardPostLN(nn.Module):
+class FeedForwardPreLN(nn.Module):
     def __init__(self, n_embd, dropout=0):
         super().__init__()
         self.net = nn.Sequential(
@@ -92,7 +92,7 @@ class LoFTREncoderLayer(nn.Module):
         return message
 
 
-class LoFTREncoderLayerPostLN(nn.Module):
+class LoFTREncoderLayerPreLN(nn.Module):
     def __init__(
         self,
         n_embd,
@@ -106,7 +106,7 @@ class LoFTREncoderLayerPostLN(nn.Module):
         self.mhsa = MultiHeadAttention(
             n_embd, n_heads, attn_dropout, proj_dropout, attention
         )
-        self.ffwd = FeedForwardPostLN(n_embd, ffwd_dropout)
+        self.ffwd = FeedForwardPreLN(n_embd, ffwd_dropout)
         self.ln1 = nn.LayerNorm(n_embd)
         self.ln2 = nn.LayerNorm(n_embd)
 

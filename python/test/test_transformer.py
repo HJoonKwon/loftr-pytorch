@@ -1,7 +1,7 @@
 import torch
 from loftr_pytorch.model.transformer import (
     LoFTREncoderLayer,
-    LoFTREncoderLayerPostLN,
+    LoFTREncoderLayerPreLN,
     LocalFeatureTransformer,
 )
 
@@ -30,8 +30,8 @@ def test_LoFTREncoderLayer():
     assert y.shape == (B, L, n_embd)
 
 
-def test_LoFTREncoderLayerPostLN():
-    loftr_encoder_layer_post_ln = LoFTREncoderLayerPostLN(
+def test_LoFTREncoderLayerPreLN():
+    loftr_encoder_layer_post_ln = LoFTREncoderLayerPreLN(
         n_embd, n_heads, attn_dropout, proj_dropout, ffwd_dropout, "flash"
     )
     x = torch.randn(B, L, n_embd)
