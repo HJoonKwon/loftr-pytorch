@@ -108,3 +108,43 @@ class ResNetFPN_8_2(nn.Module):
         x1_out = self.fpn1(x2_out, x1)
 
         return [x3_out, x1_out]
+
+
+class ResNetFPN_16_4(nn.Module):
+    def __init__(self, initial_dim, block_dims):
+        super().__init__()
+
+        # downsample(1/2)
+        self.enc0 = nn.Sequential(
+            nn.Conv2d(1, initial_dim, kernel_size=7, stride=2, padding=3, bias=False),
+            nn.BatchNorm2d(initial_dim),
+            nn.ReLU(inplace=True),
+        )
+        self.enc1 = EncoderBlock(initial_dim, block_dims[0], stride=1)  # 1/2
+        self.enc2 = EncoderBlock(block_dims[0], block_dims[1], stride=2)  # 1/4
+        self.enc3 = EncoderBlock(block_dims[1], block_dims[2], stride=2)  # 1/8
+        self.enc4 = EncoderBlock(block_dims[2], block_dims[3], stride=2)  # 1/16
+
+        self.fpn4 = conv1x1(block_dims[3], block_dims[3])
+        self.fpn3 = FPNBlock(block_dims[3], block_dims[2])
+        self.fpn2 = FPNBlock(block_dims[2], block_dims[1])
+
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
+            elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm)):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+
+    def forward(self, x):
+        x0 = self.enc0(x)
+        x1 = self.enc1(x0)
+        x2 = self.enc2(x1)
+        x3 = self.enc3(x2)
+        x4 = self.enc4(x3)
+
+        x4_out = self.fpn4(x4)
+        x3_out = self.fpn3(x4_out, x3)
+        x2_out = self.fpn2(x3_out, x2)
+
+        return [x4_out, x2_out]
