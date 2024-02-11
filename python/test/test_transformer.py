@@ -20,7 +20,7 @@ layer_names = ["self", "cross"] * 2
 
 def test_LoFTREncoderLayer():
     loftr_encoder_layer = LoFTREncoderLayer(
-        n_embd, n_heads, attn_dropout, proj_dropout, ffwd_dropout, "flash"
+        n_embd, n_heads, attn_dropout, proj_dropout, ffwd_dropout, "native"
     )
     x = torch.randn(B, L, n_embd)
     source = torch.randn(B, S, n_embd)
@@ -32,7 +32,7 @@ def test_LoFTREncoderLayer():
 
 def test_LoFTREncoderLayerPreLN():
     loftr_encoder_layer_post_ln = LoFTREncoderLayerPreLN(
-        n_embd, n_heads, attn_dropout, proj_dropout, ffwd_dropout, "flash"
+        n_embd, n_heads, attn_dropout, proj_dropout, ffwd_dropout, "native"
     )
     x = torch.randn(B, L, n_embd)
     source = torch.randn(B, S, n_embd)

@@ -27,7 +27,7 @@ class FullAttention(nn.Module):
         return y
 
 
-class FlashAttention(nn.Module):
+class TorchNativeAttention(nn.Module):
     def __init__(self, attn_dropout=0.1):
         super().__init__()
         self.attn_dropout = attn_dropout

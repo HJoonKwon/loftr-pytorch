@@ -1,6 +1,6 @@
 import torch
 
-from loftr_pytorch.model.attention import FlashAttention, LinearAttention, FullAttention
+from loftr_pytorch.model.attention import TorchNativeAttention, LinearAttention, FullAttention
 
 B = 4
 L = 32 * 32
@@ -20,8 +20,8 @@ def test_FullAttention():
     assert y.shape == (B, n_heads, L, n_embd // n_heads)
 
 
-def test_FlashAttention():
-    attn = FlashAttention()
+def test_TorchNativeAttention():
+    attn = TorchNativeAttention()
     q = torch.randn(B, n_heads, L, n_embd // n_heads)
     k = torch.randn(B, n_heads, S, n_embd // n_heads)
     v = torch.randn(B, n_heads, S, n_embd // n_heads)

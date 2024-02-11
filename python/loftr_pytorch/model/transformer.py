@@ -2,12 +2,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .attention import FullAttention, FlashAttention, LinearAttention
+from .attention import FullAttention, TorchNativeAttention, LinearAttention
 
 
 class MultiHeadAttention(nn.Module):
     def __init__(
-        self, n_embd, n_heads, attn_dropout=0, proj_dropout=0, attention="flash"
+        self, n_embd, n_heads, attn_dropout=0, proj_dropout=0, attention="native"
     ):
         super().__init__()
         self.query = nn.Linear(n_embd, n_embd, bias=False)
@@ -16,8 +16,8 @@ class MultiHeadAttention(nn.Module):
         self.project = nn.Linear(n_embd, n_embd, bias=False)
         if attention == "linear":
             self.attention = LinearAttention()
-        elif attention == "flash":
-            self.attention = FlashAttention(attn_dropout)
+        elif attention == "natvie":
+            self.attention = TorchNativeAttention(attn_dropout)
         else:
             self.attention = FullAttention(attn_dropout)
         self.proj_dropout = nn.Dropout(proj_dropout)
@@ -73,7 +73,7 @@ class LoFTREncoderLayer(nn.Module):
         attn_dropout,
         proj_dropout,
         ffwd_dropout,
-        attention="flash",
+        attention="native",
     ):
         super().__init__()
         self.mhsa = MultiHeadAttention(
@@ -100,7 +100,7 @@ class LoFTREncoderLayerPreLN(nn.Module):
         attn_dropout,
         proj_dropout,
         ffwd_dropout,
-        attention="flash",
+        attention="native",
     ):
         super().__init__()
         self.mhsa = MultiHeadAttention(
@@ -125,7 +125,7 @@ class LocalFeatureTransformer(nn.Module):
         attn_dropout,
         proj_dropout,
         ffwd_dropout,
-        attention="flash",
+        attention="native",
     ):
         super().__init__()
         self.n_embd = n_embd
