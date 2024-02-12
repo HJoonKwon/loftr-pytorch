@@ -92,7 +92,7 @@ class CoarseMatcher(nn.Module):
             sim_matrix = feat0 @ feat1.transpose(-1, -2) / self.temperature  # (B, L, S)
             if mask0 is not None:
                 sim_matrix.masked_fill_(
-                    mask0[:, :, None] * mask1[:, None, :] == 0, float("-inf")
+                    mask0[:, :, None] * mask1[:, None, :] == 0, -1e9 
                 )
             conf_matrix = F.softmax(sim_matrix, dim=1) * F.softmax(sim_matrix, dim=2)
         else:
