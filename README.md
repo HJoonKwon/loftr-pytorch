@@ -11,3 +11,4 @@ Pytorch >= 2.0.0 is required. The code is tested with PyTorch 2.1.2 and Python 3
 - [ ] The original LoFTR's transformer encoder uses Post-LayerNorm, while the current implementation uses Pre-LayerNorm, which is known to be more stable and faster from the recent literature.
 - [ ] The original LoFTR's transformer encoder uses concatenation in the multi-head attention, while the current implementation uses addition.
 - [ ] Support ONNX conversion
+- [ ] Add unit tests for improving readability and understanding.
