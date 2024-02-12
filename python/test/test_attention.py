@@ -19,8 +19,8 @@ def test_FullAttention():
     q = torch.randn(B, n_heads, L, n_embd // n_heads)
     k = torch.randn(B, n_heads, S, n_embd // n_heads)
     v = torch.randn(B, n_heads, S, n_embd // n_heads)
-    q_mask = torch.rand(B, L)
-    kv_mask = torch.rand(B, S)
+    q_mask = torch.rand(B, L) > 0.1
+    kv_mask = torch.rand(B, S) > 0.1
     y = attn(q, k, v, q_mask, kv_mask)
     assert y.shape == (B, n_heads, L, n_embd // n_heads)
 
@@ -44,8 +44,8 @@ def test_TorchNativeAttention():
     q = torch.randn(B, n_heads, L, n_embd // n_heads)
     k = torch.randn(B, n_heads, S, n_embd // n_heads)
     v = torch.randn(B, n_heads, S, n_embd // n_heads)
-    q_mask = torch.rand(B, L)
-    kv_mask = torch.rand(B, S)
+    q_mask = torch.rand(B, L) > 0.1
+    kv_mask = torch.rand(B, S) > 0.1
     y = attn(q, k, v, q_mask, kv_mask)
     assert y.shape == (B, n_heads, L, n_embd // n_heads)
 
@@ -69,8 +69,8 @@ def test_LinearAttention():
     q = torch.randn(B, n_heads, L, n_embd // n_heads)
     k = torch.randn(B, n_heads, S, n_embd // n_heads)
     v = torch.randn(B, n_heads, S, n_embd // n_heads)
-    q_mask = torch.rand(B, L)
-    kv_mask = torch.rand(B, S)
+    q_mask = torch.rand(B, L) > 0.1
+    kv_mask = torch.rand(B, S) > 0.1
     y = attn(q, k, v, q_mask, kv_mask)
     assert y.shape == (B, n_heads, L, n_embd // n_heads)
 
