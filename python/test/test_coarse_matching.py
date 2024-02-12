@@ -6,8 +6,8 @@ def test_coarse_matcher():
     # set dimensions
     hw0_i = (256, 256)
     hw1_i = (192, 192)
-    hw0_c = (32, 32)
-    hw1_c = (24, 24)
+    hw0_c = (32, 32) # 1/8 of hw0_i
+    hw1_c = (24, 24) # 1/8 of hw1_i
     B = 2
     L = hw0_c[0] * hw0_c[1]
     S = hw1_c[0] * hw1_c[1]
