@@ -12,3 +12,4 @@ Pytorch >= 2.0.0 is required. The code is tested with PyTorch 2.1.2 and Python 3
 - [ ] The original LoFTR's transformer encoder uses concatenation in the multi-head attention, while the current implementation uses addition.
 - [ ] Support ONNX conversion
 - [ ] Add unit tests for improving readability and understanding.
+- [ ] border_rm is constant in the original LoFTR, but it should change according to the window size..(?). No problem with border_rm = 2 when window_size = 5 because padding is 2 for fine preprocessing. 
