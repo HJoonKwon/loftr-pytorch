@@ -155,6 +155,8 @@ class CoarseMatcher(nn.Module):
         # will be used for fine matching
         coarse_matches = {"batch_ids": batch_ids, "l_ids": l_ids, "s_ids": s_ids}
 
+        ## TODO:: Implement random sampling for training
+
         # 5. scale indicies up to original resolution
         scale = data["hw0_i"][0] / data["hw0_c"][0]
         scale0 = (
