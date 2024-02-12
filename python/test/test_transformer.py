@@ -26,8 +26,8 @@ def test_LoFTREncoderLayer():
     )
     x = torch.randn(B, L, n_embd)
     source = torch.randn(B, S, n_embd)
-    x_mask = torch.rand(B, L)
-    source_mask = torch.rand(B, S)
+    x_mask = torch.rand(B, L) > 0.1
+    source_mask = torch.rand(B, S) > 0.1
     y = loftr_encoder_layer(x, source, x_mask, source_mask)
     assert y.shape == (B, L, n_embd)
 
@@ -52,8 +52,8 @@ def test_LoFTREncoderLayerPreLN():
     )
     x = torch.randn(B, L, n_embd)
     source = torch.randn(B, S, n_embd)
-    x_mask = torch.rand(B, L)
-    source_mask = torch.rand(B, S)
+    x_mask = torch.rand(B, L) > 0.1
+    source_mask = torch.rand(B, S) > 0.1
     y = loftr_encoder_layer_post_ln(x, source, x_mask, source_mask)
     assert y.shape == (B, L, n_embd)
 
@@ -78,8 +78,8 @@ def test_LocalFeatureTransformer():
     )
     x = torch.randn(B, L, n_embd)
     source = torch.randn(B, S, n_embd)
-    x_mask = torch.rand(B, L)
-    source_mask = torch.rand(B, S)
+    x_mask = torch.rand(B, L) > 0.1
+    source_mask = torch.rand(B, S) > 0.1
     feat0, feat1 = local_feature_transformer(x, source, x_mask, source_mask)
     assert feat0.shape == (B, L, n_embd)
     assert feat1.shape == (B, S, n_embd)
