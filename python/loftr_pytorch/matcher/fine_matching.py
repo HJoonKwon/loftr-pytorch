@@ -58,6 +58,7 @@ class FineMatcher(nn.Module):
 
         self._fine_match(expected_coords, data)
 
+    @torch.no_grad()
     def _fine_match(self, expected_coords, data):
         scale = data["hw0_i"][0] / data["hw0_f"][0]
         scale1 = (
