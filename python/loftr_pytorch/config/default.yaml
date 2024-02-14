@@ -13,12 +13,18 @@ transformer:
     layer_names: ['self', 'cross']
     n_layers: 4
     attention: 'native'
+    attn_dropout: 0.0
+    proj_dropout: 0.0
+    ffwd_dropout: 0.0
   fine:
     n_embd: 128 
     n_heads: 8
-    layer_naemes: ['self', 'cross']
+    layer_names: ['self', 'cross']
     n_layers: 1
     attention: 'native'
+    attn_dropout: 0.0
+    proj_dropout: 0.0
+    ffwd_dropout: 0.0
 
 # 3. LoFTR coarse-to-fine module 
 coarse_to_fine:
