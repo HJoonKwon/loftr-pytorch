@@ -119,23 +119,22 @@ class LoFTREncoderLayerPreLN(nn.Module):
 class LocalFeatureTransformer(nn.Module):
     def __init__(
         self,
-        layer_names,
-        n_embd,
-        n_heads,
-        attn_dropout,
-        proj_dropout,
-        ffwd_dropout,
-        attention="native",
+        config,
     ):
         super().__init__()
-        self.n_embd = n_embd
-        self.layer_names = layer_names
+        n_embd = config["n_embd"]
+        self.layer_names = config["layer_names"] * config["n_layers"]
         self.encoders = nn.ModuleList(
             [
                 LoFTREncoderLayer(
-                    n_embd, n_heads, attn_dropout, proj_dropout, ffwd_dropout, attention
+                    n_embd,
+                    config["n_heads"],
+                    config["attn_dropout"],
+                    config["proj_dropout"],
+                    config["ffwd_dropout"],
+                    config["attention"],
                 )
-                for _ in range(len(layer_names))
+                for _ in range(len(self.layer_names))
             ]
         )
         self._reset_parameters()
@@ -153,7 +152,6 @@ class LocalFeatureTransformer(nn.Module):
             mask0 (torch.Tensor): [N, L] (optional)
             mask1 (torch.Tensor): [N, S] (optional)
         """
-        assert self.n_embd == feat0.shape[-1]
         for encoder, name in zip(self.encoders, self.layer_names):
             if name == "self":
                 feat0 = encoder(feat0, feat0, mask0, mask0)
