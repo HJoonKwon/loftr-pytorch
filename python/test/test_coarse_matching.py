@@ -1,3 +1,5 @@
+import os
+import yaml
 import torch
 from loftr_pytorch.matcher.coarse_matching import CoarseMatcher
 
@@ -6,8 +8,8 @@ def test_coarse_matcher():
     # set dimensions
     hw0_i = (256, 256)
     hw1_i = (192, 192)
-    hw0_c = (32, 32) # 1/8 of hw0_i
-    hw1_c = (24, 24) # 1/8 of hw1_i
+    hw0_c = (32, 32)  # 1/8 of hw0_i
+    hw1_c = (24, 24)  # 1/8 of hw1_i
     B = 2
     L = hw0_c[0] * hw0_c[1]
     S = hw1_c[0] * hw1_c[1]
@@ -25,9 +27,15 @@ def test_coarse_matcher():
     mask1[:, :, -hw1_c[1] // 3 :] = 0
     mask1 = mask1.flatten(-2)
 
+    config_path = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)), "loftr_pytorch/config/default.yaml"
+    )
+    with open(config_path, "r") as f:
+        config = yaml.safe_load(f)
+
     # generate the model
     model = CoarseMatcher(
-        thr=0.01, border_rm=2, temperature=0.1, match_type="dual_softmax"
+        config["matcher"]["coarse"],
     )
 
     # perform coarse matching
