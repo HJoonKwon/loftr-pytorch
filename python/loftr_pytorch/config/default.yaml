@@ -1,0 +1,34 @@
+# 1. LoFTR backbone 
+backbone:
+  type: 'resnetfpn'
+  resolution: [8, 2]  
+  initial_dim: 128
+  block_dims: [128, 196, 256]
+
+# 2. LoFTR transformer 
+transformer:
+  coarse:
+    n_embd: 256
+    n_heads: 8 
+    layer_names: ['self', 'cross']
+    n_layers: 4
+    attention: 'native'
+  fine:
+    n_embd: 128 
+    n_heads: 8
+    layer_naemes: ['self', 'cross']
+    n_layers: 1
+    attention: 'native'
+
+# 3. LoFTR coarse-to-fine module 
+coarse_to_fine:
+  window: 5
+  is_concat_enabled: True
+
+# 4. LoFTR matcher 
+matcher:
+  coarse:
+    thr: 0.2
+    border_rm: 2
+    match_type: 'dual_softmax'
+    temperature: 0.1
