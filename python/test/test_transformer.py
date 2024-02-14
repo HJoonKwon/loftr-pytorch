@@ -1,4 +1,5 @@
 import os
+import yaml
 import torch
 
 from loftr_pytorch.model.transformer import (
@@ -9,18 +10,16 @@ from loftr_pytorch.model.transformer import (
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-B = 4
-L = 32 * 32
-S = 24 * 24
-n_embd = 16
-n_heads = 4
-attn_dropout = 0
-proj_dropout = 0
-ffwd_dropout = 0
-layer_names = ["self", "cross"] * 2
-
 
 def test_LoFTREncoderLayer():
+    B = 4
+    L = 32 * 32
+    S = 24 * 24
+    n_embd = 16
+    n_heads = 4
+    attn_dropout = 0
+    proj_dropout = 0
+    ffwd_dropout = 0
     loftr_encoder_layer = LoFTREncoderLayer(
         n_embd, n_heads, attn_dropout, proj_dropout, ffwd_dropout, "native"
     )
@@ -47,6 +46,14 @@ def test_LoFTREncoderLayer():
 
 
 def test_LoFTREncoderLayerPreLN():
+    B = 4
+    L = 32 * 32
+    S = 24 * 24
+    n_embd = 16
+    n_heads = 4
+    attn_dropout = 0
+    proj_dropout = 0
+    ffwd_dropout = 0
     loftr_encoder_layer_post_ln = LoFTREncoderLayerPreLN(
         n_embd, n_heads, attn_dropout, proj_dropout, ffwd_dropout, "native"
     )
@@ -72,10 +79,55 @@ def test_LoFTREncoderLayerPreLN():
     os.remove("./model.onnx")
 
 
-def test_LocalFeatureTransformer():
-    local_feature_transformer = LocalFeatureTransformer(
-        layer_names, n_embd, n_heads, attn_dropout, proj_dropout, ffwd_dropout
+def test_LocalFeatureTransformer_coarse():
+    B = 4
+    L = 32 * 32
+    S = 24 * 24
+    config_path = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)), "loftr_pytorch/config/default.yaml"
     )
+    with open(config_path, "r") as f:
+        config = yaml.safe_load(f)
+
+    local_feature_transformer = LocalFeatureTransformer(config["transformer"]["coarse"])
+
+    n_embd = config["transformer"]["coarse"]["n_embd"]
+    x = torch.randn(B, L, n_embd)
+    source = torch.randn(B, S, n_embd)
+    x_mask = torch.rand(B, L) > 0.1
+    source_mask = torch.rand(B, S) > 0.1
+    feat0, feat1 = local_feature_transformer(x, source, x_mask, source_mask)
+    assert feat0.shape == (B, L, n_embd)
+    assert feat1.shape == (B, S, n_embd)
+
+    torch.onnx.export(
+        local_feature_transformer,
+        (x, source, x_mask, source_mask),
+        "./model.onnx",
+        export_params=True,
+        opset_version=17,
+        do_constant_folding=True,
+        input_names=["x", "source", "x_mask", "source_mask"],
+        output_names=["result"],
+    )
+
+    assert os.path.isfile("./model.onnx")
+    os.remove("./model.onnx")
+
+
+def test_LocalFeatureTransformer_fine():
+    B = 4
+    L = 32 * 32
+    S = 24 * 24
+    config_path = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)), "loftr_pytorch/config/default.yaml"
+    )
+    with open(config_path, "r") as f:
+        config = yaml.safe_load(f)
+
+    local_feature_transformer = LocalFeatureTransformer(config["transformer"]["fine"])
+
+    n_embd = config["transformer"]["fine"]["n_embd"]
     x = torch.randn(B, L, n_embd)
     source = torch.randn(B, S, n_embd)
     x_mask = torch.rand(B, L) > 0.1
