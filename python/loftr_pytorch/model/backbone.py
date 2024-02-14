@@ -71,10 +71,10 @@ class FPNBlock(nn.Module):
 
 
 class ResNetFPN_8_2(nn.Module):
-    def __init__(self, initial_dim, block_dims):
+    def __init__(self, config):
         super().__init__()
-        self.initial_dim = initial_dim
-        self.block_dims = block_dims
+        initial_dim = config["initial_dim"]
+        block_dims = config["block_dims"]
 
         # downsample(1/2)
         self.enc0 = nn.Sequential(
