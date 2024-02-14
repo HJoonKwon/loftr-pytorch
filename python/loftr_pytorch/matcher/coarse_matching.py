@@ -59,12 +59,12 @@ def mask_border_with_padding(
 
 
 class CoarseMatcher(nn.Module):
-    def __init__(self, thr, border_rm, temperature=None, match_type="dual_softmax"):
+    def __init__(self, config):
         super().__init__()
-        self.thr = thr
-        self.border_rm = border_rm
-        self.temperature = temperature
-        self.match_type = match_type
+        self.thr = config["thr"]
+        self.border_rm = config["border_rm"]
+        self.temperature = config["temperature"]
+        self.match_type = config["match_type"]
 
     def forward(self, feat0, feat1, data, mask0=None, mask1=None):
         """
@@ -92,7 +92,7 @@ class CoarseMatcher(nn.Module):
             sim_matrix = feat0 @ feat1.transpose(-1, -2) / self.temperature  # (B, L, S)
             if mask0 is not None:
                 sim_matrix.masked_fill_(
-                    mask0[:, :, None] * mask1[:, None, :] == 0, -1e9 
+                    mask0[:, :, None] * mask1[:, None, :] == 0, -1e9
                 )
             conf_matrix = F.softmax(sim_matrix, dim=1) * F.softmax(sim_matrix, dim=2)
         else:
