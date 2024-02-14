@@ -5,8 +5,7 @@ from loftr_pytorch.model.backbone import ResNetFPN_8_2
 
 
 def test_ResNetFPN_8_2():
-    file_path = os.path.dirname(os.path.dirname(__file__))
-    config_path = os.path.join(file_path, 'loftr_pytorch/config/default.yaml') 
+    config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'loftr_pytorch/config/default.yaml') 
     with open(config_path, 'r') as f:
         config = yaml.safe_load(f)
     model = ResNetFPN_8_2(config['backbone'])
