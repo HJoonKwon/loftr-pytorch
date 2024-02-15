@@ -4,24 +4,19 @@ import torch.nn.functional as F
 
 
 class CoarseToFine(nn.Module):
-    def __init__(
-        self,
-        window: int,
-        dim_coarse: int,
-        dim_fine: int,
-        is_concat_enabled: bool = True,
-        coarse_to_fine_ratio: int = 4,
-    ):
+    def __init__(self, config):
         super().__init__()
-        self.window = window
-        self.is_concat_enabled = is_concat_enabled
-        self.stride = coarse_to_fine_ratio
-        self.dim_coarse = dim_coarse
-        self.dim_fine = dim_fine
+        self.window = config["window"]
+        self.is_concat_enabled = config["is_concat_enabled"]
+        self.stride = config["coarse_to_fine_ratio"]
+        self.dim_coarse = config["dim_coarse"]
+        self.dim_fine = config["dim_fine"]
 
-        if is_concat_enabled:
-            self.coarse_to_fine_proj = nn.Linear(dim_coarse, dim_fine, bias=True)
-            self.merge_features = nn.Linear(2 * dim_fine, dim_fine, bias=True)
+        if self.is_concat_enabled:
+            self.coarse_to_fine_proj = nn.Linear(
+                self.dim_coarse, self.dim_fine, bias=True
+            )
+            self.merge_features = nn.Linear(2 * self.dim_fine, self.dim_fine, bias=True)
             self._reset_parameters()
 
     def _reset_parameters(self):
