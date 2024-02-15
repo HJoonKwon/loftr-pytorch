@@ -7,6 +7,12 @@ backbone:
 
 # 2. LoFTR transformer 
 transformer:
+  position_embedding:
+    type: 'sine'
+    dim:  256 # same as coarse n_embd
+    max_shape: [256, 256] 
+    temperature: 10000
+    normalize: True
   coarse:
     n_embd: 256
     n_heads: 8 
