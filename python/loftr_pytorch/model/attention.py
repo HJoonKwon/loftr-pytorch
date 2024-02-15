@@ -38,7 +38,7 @@ class TorchNativeAttention(nn.Module):
         else:
             attn_mask = None
         y = torch.nn.functional.scaled_dot_product_attention(
-            q, k, v, attn_mask=None, dropout_p=self.attn_dropout, is_causal=False
+            q, k, v, attn_mask=attn_mask, dropout_p=self.attn_dropout, is_causal=False
         )
         return y
 
