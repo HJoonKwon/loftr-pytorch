@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 
 class FineMatcher(nn.Module):
-    def __init__(self, window):
+    def __init__(self, window=5):
         super().__init__()
         self.window = window
 
@@ -20,8 +20,9 @@ class FineMatcher(nn.Module):
                 'mkpts1_f' (torch.Tensor): [M, 2]}
         """
 
-        M, _, C = feat_f0.shape
-        window = self.window
+        M, WW, C = feat_f0.shape
+        window = int(WW**0.5)
+        self.window = window
         if M == 0:
             assert (
                 self.training == False
