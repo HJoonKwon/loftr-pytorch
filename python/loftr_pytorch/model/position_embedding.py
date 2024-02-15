@@ -4,6 +4,7 @@ import math
 
 
 # refer to https://github.com/facebookresearch/detr/blob/3af9fa878e73b6894ce3596450a8d9b89d918ca9/models/position_encoding.py
+# TODO:: Need investigation. Why not using dynamic shape?
 class PositionEmbeddingSine(nn.Module):
     def __init__(
         self, d_model, max_shape, temperature=10000.0, normalize=True, scale=None
