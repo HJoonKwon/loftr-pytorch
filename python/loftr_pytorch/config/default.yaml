@@ -30,6 +30,9 @@ transformer:
 coarse_to_fine:
   window: 5
   is_concat_enabled: True
+  dim_coarse: 256 
+  dim_fine: 128
+  coarse_to_fine_ratio: 4
 
 # 4. LoFTR matcher 
 matcher:
