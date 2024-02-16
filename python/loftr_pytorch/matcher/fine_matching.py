@@ -6,7 +6,7 @@ import torch.nn.functional as F
 class FineMatcher(nn.Module):
     def __init__(self, window=5):
         super().__init__()
-        self.window = window 
+        self.window = window
 
     def forward(self, feat_f0, feat_f1, data):
         """
@@ -45,7 +45,9 @@ class FineMatcher(nn.Module):
         pos_x = torch.linspace(0, window - 1, window, device=feat_f0.device)
         pos_x = (pos_x / (window - 1) - 0.5) * 2.0
         pos_y = pos_x.clone()
-        grid_x, grid_y = torch.meshgrid(pos_x, pos_y, indexing="ij")
+        grid_x, grid_y = torch.stack(
+            torch.meshgrid(pos_x, pos_y, indexing="ij")
+        ).transpose(1, 2)
         grid_x = grid_x.reshape(-1)  # (window**2)
         grid_y = grid_y.reshape(-1)
 
