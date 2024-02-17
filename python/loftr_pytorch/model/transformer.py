@@ -3,7 +3,7 @@ import torch.nn as nn
 
 from .attention import (
     FullAttention,
-    TorchScaleDotProduct,
+    TorchScaledDotProduct,
     LinearAttention,
 )
 
@@ -26,7 +26,7 @@ class MultiHeadAttention(nn.Module):
         if attention == "linear":
             self.attention = LinearAttention()
         elif attention == "torchsdp":
-            self.attention = TorchScaleDotProduct(attn_dropout)
+            self.attention = TorchScaledDotProduct(attn_dropout)
         else:
             self.attention = FullAttention(attn_dropout)
         self.use_flash = use_flash
@@ -36,32 +36,35 @@ class MultiHeadAttention(nn.Module):
 
     def forward(self, x, source, x_mask=None, source_mask=None):
         B, L, C = x.shape
+        dtype = x.dtype
         q = (
             self.query(x)
             .view(B, L, self.n_heads, self.n_embd // self.n_heads)
             .transpose(1, 2)
-            .contiguous()
         )
         k = (
             self.key(source)
             .view(B, -1, self.n_heads, self.n_embd // self.n_heads)
             .transpose(1, 2)
-            .contiguous()
         )
         v = (
             self.value(source)
             .view(B, -1, self.n_heads, self.n_embd // self.n_heads)
             .transpose(1, 2)
-            .contiguous()
         )
-        if self.use_flash:
-            q, k, v = (
-                q.type(torch.float16),
-                k.type(torch.float16),
-                v.type(torch.float16),
-            )
 
-        out = self.attention(q, k, v, None, None).type(torch.float32)
+        if self.use_flash:
+            if x_mask is None and source_mask is None:
+                q, k, v = (
+                    q.type(torch.float16),
+                    k.type(torch.float16),
+                    v.type(torch.float16),
+                )
+            else:
+                #flash attention does not support attn_mask. use memory efficient attention instead.
+                pass
+
+        out = self.attention(q, k, v, x_mask, source_mask).type(dtype)
         out = out.transpose(1, 2).reshape(B, L, self.n_embd)
         out = self.project(self.proj_dropout(out))
         return out

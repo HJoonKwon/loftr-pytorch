@@ -16,8 +16,9 @@ class FullAttention(nn.Module):
         weight = q @ k.transpose(-2, -1) * scale  # (B, nh, L, S)
 
         if kv_mask is not None:
+            attn_mask = (q_mask[:, None, :, None] * kv_mask[:, None, None, :] == 0).to(dtype=q_mask.dtype)
             weight = weight.masked_fill(
-                q_mask[:, None, :, None] * kv_mask[:, None, None, :] == 0, float("-inf")
+                attn_mask, float("-inf")
             )
         weight = F.softmax(weight, dim=-1)
         weight = self.dropout(weight)
@@ -27,7 +28,7 @@ class FullAttention(nn.Module):
         return y
 
 
-class TorchScaleDotProduct(nn.Module):
+class TorchScaledDotProduct(nn.Module):
     def __init__(self, attn_dropout=0.1):
         super().__init__()
         self.attn_dropout = attn_dropout
