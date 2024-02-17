@@ -16,7 +16,7 @@ class MultiHeadAttention(nn.Module):
         self.project = nn.Linear(n_embd, n_embd, bias=False)
         if attention == "linear":
             self.attention = LinearAttention()
-        elif attention == "natvie":
+        elif attention == "native":
             self.attention = TorchNativeAttention(attn_dropout)
         else:
             self.attention = FullAttention(attn_dropout)
