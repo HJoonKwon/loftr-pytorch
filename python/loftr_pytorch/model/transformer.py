@@ -1,13 +1,22 @@
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
-from .attention import FullAttention, TorchNativeAttention, LinearAttention
+from .attention import (
+    FullAttention,
+    TorchScaleDotProduct,
+    LinearAttention,
+)
 
 
 class MultiHeadAttention(nn.Module):
     def __init__(
-        self, n_embd, n_heads, attn_dropout=0, proj_dropout=0, attention="native"
+        self,
+        n_embd,
+        n_heads,
+        attn_dropout=0,
+        proj_dropout=0,
+        attention="torchsdp",
+        use_flash=True,
     ):
         super().__init__()
         self.query = nn.Linear(n_embd, n_embd, bias=False)
@@ -16,22 +25,43 @@ class MultiHeadAttention(nn.Module):
         self.project = nn.Linear(n_embd, n_embd, bias=False)
         if attention == "linear":
             self.attention = LinearAttention()
-        elif attention == "native":
-            self.attention = TorchNativeAttention(attn_dropout)
+        elif attention == "torchsdp":
+            self.attention = TorchScaleDotProduct(attn_dropout)
         else:
             self.attention = FullAttention(attn_dropout)
+        self.use_flash = use_flash
         self.proj_dropout = nn.Dropout(proj_dropout)
         self.n_heads = n_heads
         self.n_embd = n_embd
 
     def forward(self, x, source, x_mask=None, source_mask=None):
         B, L, C = x.shape
-        q, k, v = x, source, source
-        q = q.view(B, -1, self.n_heads, self.n_embd // self.n_heads).transpose(2, 1)
-        k = k.view(B, -1, self.n_heads, self.n_embd // self.n_heads).transpose(2, 1)
-        v = v.view(B, -1, self.n_heads, self.n_embd // self.n_heads).transpose(2, 1)
+        q = (
+            self.query(x)
+            .view(B, L, self.n_heads, self.n_embd // self.n_heads)
+            .transpose(1, 2)
+            .contiguous()
+        )
+        k = (
+            self.key(source)
+            .view(B, -1, self.n_heads, self.n_embd // self.n_heads)
+            .transpose(1, 2)
+            .contiguous()
+        )
+        v = (
+            self.value(source)
+            .view(B, -1, self.n_heads, self.n_embd // self.n_heads)
+            .transpose(1, 2)
+            .contiguous()
+        )
+        if self.use_flash:
+            q, k, v = (
+                q.type(torch.float16),
+                k.type(torch.float16),
+                v.type(torch.float16),
+            )
 
-        out = self.attention(q, k, v, x_mask, source_mask)
+        out = self.attention(q, k, v, None, None).type(torch.float32)
         out = out.transpose(1, 2).reshape(B, L, self.n_embd)
         out = self.project(self.proj_dropout(out))
         return out

@@ -18,7 +18,8 @@ transformer:
     n_heads: 8 
     layer_names: ['self', 'cross']
     n_layers: 4
-    attention: 'native'
+    attention: 'torchsdp'
+    use_flash: true
     attn_dropout: 0.0
     proj_dropout: 0.0
     ffwd_dropout: 0.0
@@ -27,7 +28,8 @@ transformer:
     n_heads: 8
     layer_names: ['self', 'cross']
     n_layers: 1
-    attention: 'native'
+    attention: 'torchsdp'
+    use_flash: true
     attn_dropout: 0.0
     proj_dropout: 0.0
     ffwd_dropout: 0.0

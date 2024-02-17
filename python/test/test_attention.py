@@ -2,7 +2,7 @@ import os
 import torch
 
 from loftr_pytorch.model.attention import (
-    TorchNativeAttention,
+    TorchScaleDotProduct,
     LinearAttention,
     FullAttention,
 )
@@ -39,8 +39,8 @@ def test_FullAttention():
     os.remove("./model.onnx")
 
 
-def test_TorchNativeAttention():
-    attn = TorchNativeAttention()
+def test_TorchScaleDotProduct():
+    attn = TorchScaleDotProduct()
     q = torch.randn(B, n_heads, L, n_embd // n_heads)
     k = torch.randn(B, n_heads, S, n_embd // n_heads)
     v = torch.randn(B, n_heads, S, n_embd // n_heads)

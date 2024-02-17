@@ -21,7 +21,7 @@ def test_LoFTREncoderLayer():
     proj_dropout = 0
     ffwd_dropout = 0
     loftr_encoder_layer = LoFTREncoderLayer(
-        n_embd, n_heads, attn_dropout, proj_dropout, ffwd_dropout, "native"
+        n_embd, n_heads, attn_dropout, proj_dropout, ffwd_dropout, "torchsdp"
     )
     x = torch.randn(B, L, n_embd)
     source = torch.randn(B, S, n_embd)
@@ -55,7 +55,7 @@ def test_LoFTREncoderLayerPreLN():
     proj_dropout = 0
     ffwd_dropout = 0
     loftr_encoder_layer_post_ln = LoFTREncoderLayerPreLN(
-        n_embd, n_heads, attn_dropout, proj_dropout, ffwd_dropout, "native"
+        n_embd, n_heads, attn_dropout, proj_dropout, ffwd_dropout, "torchsdp"
     )
     x = torch.randn(B, L, n_embd)
     source = torch.randn(B, S, n_embd)
