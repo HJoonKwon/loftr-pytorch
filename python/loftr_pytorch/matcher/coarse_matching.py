@@ -66,7 +66,7 @@ class CoarseMatcher(nn.Module):
         self.temperature = config["temperature"]
         self.match_type = config["match_type"]
 
-    def forward(self, feat0, feat1, data, mask0=None, mask1=None):
+    def forward(self, feat0, feat1, scale, hw0_c, hw1_c, mask0=None, mask1=None):
         """
         Args:
             feat0 (torch.Tensor): [B, L, C] where L = h0c * w0c
@@ -98,11 +98,10 @@ class CoarseMatcher(nn.Module):
         else:
             raise NotImplemented
 
-        data.update({"conf_matrix": conf_matrix})
-        data.update(**self._coarse_match(conf_matrix, data))
+        return self._coarse_match(conf_matrix, scale, hw0_c, hw1_c, mask0, mask1)
 
     @torch.no_grad()
-    def _coarse_match(self, conf_matrix, data):
+    def _coarse_match(self, conf_matrix, scale, hw0_c, hw1_c, mask0, mask1):
         """
         Args:
             conf_matrix (torch.Tensor): [B, L, S]
@@ -118,24 +117,22 @@ class CoarseMatcher(nn.Module):
                 'mkpts1_c' (torch.Tensor): [M, 2],
                 'mconf' (torch.Tensor): [M]}
         """
-        h0c, w0c = data["hw0_c"]
-        h1c, w1c = data["hw1_c"]
         B, L, S = conf_matrix.shape
         assert (
-            L == h0c * w0c and S == h1c * w1c
+            L == hw0_c[0] * hw0_c[1] and S == hw1_c[0] * hw1_c[1]
         ), "coarse feature dimensions do not match"
 
         # 1. confidence thresholding
         mask = conf_matrix > self.thr  # (B, L, S)
 
         # 2. masking border
-        mask = mask.view(B, h0c, w0c, h1c, w1c)  # (B, L, S) -> (B, h0c, w0c, h1c, w1c)
-        if "mask0" not in data:
+        mask = mask.view(
+            B, hw0_c[0], hw0_c[1], hw1_c[0], hw1_c[1]
+        )  # (B, L, S) -> (B, h0c, w0c, h1c, w1c)
+        if not mask0:
             mask_border(mask, self.border_rm, False)
         else:
-            mask_border_with_padding(
-                mask, self.border_rm, False, data["mask0"], data["mask1"]
-            )
+            mask_border_with_padding(mask, self.border_rm, False, mask0, mask1)
         mask = mask.view(B, L, S)
 
         # 3. mutual nearest neighbor
@@ -152,29 +149,15 @@ class CoarseMatcher(nn.Module):
         s_ids = all_s_ids[batch_ids, l_ids]  # all_s_ids = (B, L) filled with s_ids
         mconf = conf_matrix[batch_ids, l_ids, s_ids]  # (M, ) where M = len(batch_ids)
 
-        # will be used for fine matching
-        coarse_matches = {"batch_ids": batch_ids, "l_ids": l_ids, "s_ids": s_ids}
-
-        ## TODO:: Implement random sampling for training
-
         # 5. scale indicies up to original resolution
-        scale = data["hw0_i"][0] / data["hw0_c"][0]
-        scale0 = (
-            scale * data["scale0"][batch_ids] if "scale0" in data else scale
-        )  # scale0 can be [scale0_w, scale0_h]
-        scale1 = scale * data["scale1"][batch_ids] if "scale1" in data else scale
 
-        mkpts0 = torch.stack([l_ids % w0c, l_ids // w0c], dim=1) * scale0
-        mkpts1 = torch.stack([s_ids % w1c, s_ids // w1c], dim=1) * scale1
+        mkpts0 = torch.stack([l_ids % hw0_c[1], l_ids // hw0_c[1]], dim=1) * scale
+        mkpts1 = torch.stack([s_ids % hw1_c[1], s_ids // hw1_c[1]], dim=1) * scale
 
-        coarse_matches.update(
-            {
-                "gt_mask": mconf == 0,
-                "m_bids": batch_ids[mconf != 0],  # mconf == 0 => gt matches
-                "mkpts0_c": mkpts0[mconf != 0],
-                "mkpts1_c": mkpts1[mconf != 0],
-                "mconf": mconf[mconf != 0],
-            }
-        )
+        gt_mask = mconf == 0
+        m_bids = batch_ids[mconf != 0]  # mconf == 0 => gt matches
+        mkpts0_c = mkpts0[mconf != 0]
+        mkpts1_c = mkpts1[mconf != 0]
+        mconf = mconf[mconf != 0]
 
-        return coarse_matches
+        return batch_ids, l_ids, s_ids, gt_mask, m_bids, mkpts0_c, mkpts1_c, mconf

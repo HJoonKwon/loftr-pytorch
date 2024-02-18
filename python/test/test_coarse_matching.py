@@ -17,7 +17,6 @@ def test_coarse_matcher():
 
     # generate coarse feature
     feat0, feat1 = torch.randn(B, L, C), torch.randn(B, S, C)
-    data = {"hw0_i": hw0_i, "hw1_i": hw1_i, "hw0_c": hw0_c, "hw1_c": hw1_c}
 
     # generate coarse mask
     mask0 = torch.ones(1, *hw0_c)
@@ -38,5 +37,7 @@ def test_coarse_matcher():
         config["matcher"]["coarse"],
     )
 
+    scale = hw0_i[0] / hw0_c[0]
+
     # perform coarse matching
-    model(feat0, feat1, data)
+    model(feat0, feat1, scale, hw0_c, hw1_c)

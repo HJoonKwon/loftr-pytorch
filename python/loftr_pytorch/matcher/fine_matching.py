@@ -8,7 +8,7 @@ class FineMatcher(nn.Module):
         super().__init__()
         self.window = window
 
-    def forward(self, feat_f0, feat_f1, data):
+    def forward(self, feat_f0, feat_f1, scale, mkpts0_c, mkpts1_c):
         """
         Args:
             feat0 (torch.Tensor): [M, window**2, C]
@@ -27,13 +27,7 @@ class FineMatcher(nn.Module):
             assert (
                 self.training == False
             ), "M is always >0, when training, see coarse_matching.py"
-            data.update(
-                {
-                    "mkpts0_f": data["mkpts0_c"],
-                    "mkpts1_f": data["mkpts1_c"],
-                }
-            )
-            return
+            return mkpts0_c, mkpts1_c
 
         feat_f0_middle = feat_f0[:, window // 2, :]  # (M, C)
         score_matrix = feat_f0_middle[:, None, :] @ feat_f1.transpose(
@@ -59,18 +53,14 @@ class FineMatcher(nn.Module):
 
         # TODO:: expec_f for training
 
-        self._fine_match(expected_coords, data)
+        return self._fine_match(expected_coords, scale, mkpts0_c, mkpts1_c)
 
     @torch.no_grad()
-    def _fine_match(self, expected_coords, data):
-        scale = data["hw0_i"][0] / data["hw0_f"][0]
-        scale1 = (
-            scale * data["scale1"][data["batch_ids"]] if "scale1" in data else scale
-        )
+    def _fine_match(self, expected_coords, scale, mkpts0_c, mkpts1_c):
 
-        mkpts0_f = data["mkpts0_c"]
+        mkpts0_f = mkpts0_c
         mkpts1_f = (
-            data["mkpts1_c"] + expected_coords * (self.window // 2) * scale1
+            mkpts1_c + expected_coords * (self.window // 2) * scale
         )  # TODO:: M and M' are different for training.
 
-        data.update({"mkpts0_f": mkpts0_f, "mkpts1_f": mkpts1_f})
+        return mkpts0_f, mkpts1_f

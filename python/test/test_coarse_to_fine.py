@@ -32,13 +32,14 @@ def test_coarse_to_fine():
         B, dim_fine, *hw0_f
     )
 
-    data = {
-        "batch_ids": torch.tensor([0, 0, 1, 1]),
-        "l_ids": torch.tensor([5, 200, 501, 802]),
-        "s_ids": torch.tensor([105, 201, 320, 405]),
-    }
+    batch_ids = torch.tensor([0, 0, 1, 1])
+    l_ids = torch.tensor([5, 200, 501, 802])
+    s_ids = torch.tensor([105, 201, 320, 405])
+
     model = CoarseToFine(config)
-    feat_f1_unfold, feat_f0_unfold = model(feat_f0, feat_f1, feat_c0, feat_c1, data)
-    valid_len = len(data["batch_ids"])
+    feat_f1_unfold, feat_f0_unfold = model(
+        feat_f0, feat_f1, feat_c0, feat_c1, batch_ids, l_ids, s_ids
+    )
+    valid_len = len(batch_ids)
     assert feat_f1_unfold.shape == (valid_len, window**2, dim_fine)
     assert feat_f0_unfold.shape == (valid_len, window**2, dim_fine)

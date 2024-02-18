@@ -24,7 +24,7 @@ class LoFTR(nn.Module):
         self.coarse_to_fine = CoarseToFine(config["coarse_to_fine"])
         self.fine_matcher = FineMatcher()
 
-    def forward(self, data):
+    def forward(self, image0, image1, mask0=None, mask1=None):
         """
         Args:
             data (dict): {
@@ -34,29 +34,20 @@ class LoFTR(nn.Module):
                     'mask1'(optional) : (torch.Tensor): (B, H, W)
                 }
         """
-        data.update(
-            {"hw0_i": data["image0"].shape[2:], "hw1_i": data["image1"].shape[2:]}
-        )
-        if data["hw0_i"] == data["hw1_i"]:  # faster & better BN convergence
-            feats_c, feats_f = self.backbone(
-                torch.cat([data["image0"], data["image1"]], dim=0)
-            )
+        hw0_i = image0.shape[2:]
+        hw1_i = image1.shape[2:]
+
+        if hw0_i == hw1_i:  # faster & better BN convergence
+            feats_c, feats_f = self.backbone(torch.cat([image0, image1], dim=0))
             (feat_c0, feat_c1), (feat_f0, feat_f1) = torch.chunk(
                 feats_c, 2, dim=0
             ), torch.chunk(feats_f, 2, dim=0)
         else:  # handle different input shapes
             (feat_c0, feat_f0), (feat_c1, feat_f1) = self.backbone(
-                data["image0"]
-            ), self.backbone(data["image1"])
+                image0
+            ), self.backbone(image1)
 
-        data.update(
-            {
-                "hw0_c": feat_c0.shape[2:],
-                "hw1_c": feat_c1.shape[2:],
-                "hw0_f": feat_f0.shape[2:],
-                "hw1_f": feat_f1.shape[2:],
-            }
-        )
+        hw0_f = feat_f0.shape[2:]
 
         B, _, h0_c, w0_c = feat_c0.shape
         feat_c0 = (
@@ -72,17 +63,28 @@ class LoFTR(nn.Module):
         )
 
         mask_c0 = mask_c1 = None
-        if "mask0" in data:
-            mask_c0, mask_c1 = data["mask0"].flatten(-2), data["mask1"].flatten(-2)
+        if mask0:
+            mask_c0, mask_c1 = mask0.flatten(-2), mask1.flatten(-2)
         feat_c0, feat_c1 = self.transformer_coarse(feat_c0, feat_c1, mask_c0, mask_c1)
-        self.coarse_matcher(feat_c0, feat_c1, data, mask_c0, mask_c1)
+
+        hw0_c = (h0_c, w0_c)
+        hw1_c = (h1_c, w1_c)
+        scale = hw0_i[0] / hw0_c[0]  # TODO:: scale multiplication
+
+        batch_ids, l_ids, s_ids, gt_mask, m_bids, mkpts0_c, mkpts1_c, mconf = (
+            self.coarse_matcher(feat_c0, feat_c1, scale, hw0_c, hw1_c, mask_c0, mask_c1)
+        )
 
         feat_f0_unfold, feat_f1_unfold = self.coarse_to_fine(
-            feat_f0, feat_f1, feat_c0, feat_c1, data
+            feat_f0, feat_f1, feat_c0, feat_c1, batch_ids, l_ids, s_ids
         )
         if feat_f0_unfold.shape[0] != 0:
             feat_f0_unfold, feat_f1_unfold = self.transformer_fine(
                 feat_f0_unfold, feat_f1_unfold
             )
 
-        self.fine_matcher(feat_f0_unfold, feat_f1_unfold, data)
+        scale = hw0_i[0] / hw0_f[0]  # TODO:: scale multiplication
+
+        return self.fine_matcher(
+            feat_f0_unfold, feat_f1_unfold, scale, mkpts0_c, mkpts1_c
+        )

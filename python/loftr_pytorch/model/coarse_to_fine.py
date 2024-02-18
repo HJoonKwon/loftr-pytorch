@@ -24,7 +24,7 @@ class CoarseToFine(nn.Module):
             if p.dim() > 1:
                 nn.init.kaiming_normal_(p, mode="fan_out", nonlinearity="relu")
 
-    def forward(self, feat_f0, feat_f1, feat_c0, feat_c1, data):
+    def forward(self, feat_f0, feat_f1, feat_c0, feat_c1, batch_ids, l_ids, s_ids):
         """
         Args:
             feat_f0 (torch.Tensor): [B, dim_fine, *hw0f]
@@ -38,11 +38,6 @@ class CoarseToFine(nn.Module):
         """
 
         B, L, S = feat_c0.shape[0], feat_c0.shape[1], feat_c1.shape[1]
-        batch_ids, l_ids, s_ids = (
-            data["batch_ids"],
-            data["l_ids"],
-            data["s_ids"],
-        )  # (M, )
 
         if batch_ids.shape[0] == 0:
             feat0 = torch.empty(0, self.window**3, self.dim_fine, device=feat_f0.device)

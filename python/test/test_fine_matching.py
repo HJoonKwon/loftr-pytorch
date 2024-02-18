@@ -7,20 +7,17 @@ def test_fine_matcher():
     M = 2
     C = 8
 
-    data = {
-        "hw0_i": (512, 512),
-        "hw0_f": (256, 256),
-        "batch_ids": torch.tensor([0, 1]),
-        "l_ids": torch.tensor([5, 200]),
-        "s_ids": torch.tensor([105, 405]),
-        "mkpts0_c": torch.randint(window - 1, (M, 2)),
-        "mkpts1_c": torch.randint(window - 1, (M, 2)),
-    }
+    hw0_i = (512, 512)
+    hw0_f = (256, 256)
+    scale = hw0_i[0] / hw0_f[0]
+
+    mkpts0_c = torch.randint(window - 1, (M, 2))
+    mkpts1_c = torch.randint(window - 1, (M, 2))
 
     feat_f0 = torch.randn(M, window**2, C)
     feat_f1 = torch.randn(M, window**2, C)
 
     model = FineMatcher(window=window)
-    model(feat_f0, feat_f1, data)
-    assert data["mkpts0_f"].shape == (M, 2)
-    assert data["mkpts1_f"].shape == (M, 2)
+    mkpts0_f, mkpts1_f = model(feat_f0, feat_f1, scale, mkpts0_c, mkpts1_c)
+    assert mkpts0_f.shape == (M, 2)
+    assert mkpts1_f.shape == (M, 2)
