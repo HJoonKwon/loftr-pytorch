@@ -2,7 +2,7 @@
 Reimplementation of LoFTR in PyTorch, end-to-end transformer model for image matching
 
 ## Installation
-Pytorch >= 2.0.0 is required. The code is tested with PyTorch 2.1.2 and Python 3.10.13.
+Pytorch >= 2.2.0 is required. The code is tested with PyTorch 2.2.0 and Python 3.10.13.
 
 ## Differences from the original LoFTR
 - [x] Instead of einops, torch native functions are used for dealing with dimensions.
