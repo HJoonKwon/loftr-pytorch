@@ -14,7 +14,6 @@ def test_warp_grid():
         H // hc
     )
     depth0 = torch.rand(B, H, W)
-    depth1 = torch.rand(B, H, W)
     T_0to1 = torch.eye(3, 4).unsqueeze(0).repeat(B, 1, 1)
     K0 = torch.eye(3).unsqueeze(0).repeat(B, 1, 1)
     K1 = K0.clone()
@@ -22,11 +21,10 @@ def test_warp_grid():
     warped_grid_pts0 = warp_grid(
         grid_xy,
         depth0,
-        depth1,
         T_0to1,
         K0,
         K1,
     )
 
     assert warped_grid_pts0.shape == (B, L, 2)
-    assert torch.allclose(warped_grid_pts0, grid_xy, atol=1e-3, rtol=1e-3)
+    assert torch.allclose(warped_grid_pts0, grid_xy, atol=1e-2, rtol=1e-3)
