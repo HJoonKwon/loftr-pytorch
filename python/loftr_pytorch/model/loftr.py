@@ -30,8 +30,8 @@ class LoFTR(nn.Module):
             data (dict): {
                     'image0': (torch.Tensor): (B, 1, H, W)
                     'image1': (torch.Tensor): (B, 1, H, W)
-                    'mask0'(optional) : (torch.Tensor): (B, H, W) '0' indicates a padded position
-                    'mask1'(optional) : (torch.Tensor): (B, H, W)
+                    'mask0'(optional) : (torch.Tensor): (B, hc, wc) '0' indicates a padded position
+                    'mask1'(optional) : (torch.Tensor): (B, hc, wc)
                 }
         """
         hw0_i = image0.shape[2:]
