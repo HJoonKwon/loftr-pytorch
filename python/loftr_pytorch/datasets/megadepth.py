@@ -1,0 +1,172 @@
+import torch
+import torch.nn.functional as F
+from torch.utils.data import Dataset
+import numpy as np
+import h5py
+import os, copy
+import cv2
+from loftr_pytorch.supervision.utils import inverse_transformation
+
+
+def get_new_size(size, long_dim=None, div_factor=None):
+    w, h = size
+    if long_dim is not None:  # resize the longer edge
+        scale = long_dim / max(h, w)
+        w_new, h_new = int(round(w * scale)), int(round(h * scale))
+    else:
+        w_new, h_new = w, h
+
+    divisible_size = get_divisible_size((w_new, h_new), div_factor=div_factor)
+    return divisible_size
+
+
+def get_divisible_size(size, div_factor=None):
+    w, h = size
+    if div_factor is not None:
+        w_new, h_new = map(lambda x: int((x // div_factor) * div_factor), [w, h])
+    else:
+        w_new, h_new = w, h
+    return w_new, h_new
+
+
+def pad_bottom_right(img, pad_size, ret_mask=False):
+    assert isinstance(pad_size, int) and pad_size >= max(
+        img.shape[-2:]
+    ), f"{pad_size} < {max(img.shape[-2:])}"
+    assert img.ndim == 2
+    mask = None
+    padded = np.zeros((pad_size, pad_size), dtype=img.dtype)
+    padded[: img.shape[0], : img.shape[1]] = img
+    if ret_mask:
+        mask = np.zeros((pad_size, pad_size), dtype=bool)
+        mask[: img.shape[0], : img.shape[1]] = True
+    return padded, mask
+
+
+class MegaDepth(Dataset):
+    def __init__(
+        self,
+        base_path,
+        npz_path,
+        long_dim=None,
+        image_padding=False,
+        depth_padding=False,
+        mode="train",
+        min_overlap_score=0.4,
+        div_factor=8,
+        coarse_scale=1 / 8,
+    ):
+        super().__init__()
+
+        if mode == "train":
+            assert long_dim is not None and image_padding and depth_padding
+        if mode == "test" and min_overlap_score != 0:
+            min_overlap_score = 0
+
+        self.base_path = base_path
+        self.mode = mode
+        self.scene_id = npz_path.split(".")[0]
+        self.long_dim = long_dim
+        self.div_factor = div_factor
+        self.image_padding = image_padding
+        self.depth_padding = depth_padding
+        self.min_overlap_score = min_overlap_score
+        self.depth_max_size = 2000 if depth_padding else None
+        self.coarse_scale = coarse_scale
+
+        self.scene_info = np.load(npz_path, allow_pickle=True)
+        self.pair_infos = [
+            copy.deepcopy(pair_info)
+            for pair_info in self.scene_info["pair_infos"]
+            if pair_info[1] > min_overlap_score
+        ]
+        del self.scene_info["pair_infos"]
+
+    def __len__(self):
+        return len(self.pair_infos)
+
+    def __getitem__(self, idx):
+        (idx0, idx1), overlap_score, central_matches = self.pair_infos[idx]
+        img_path0 = os.path.join(self.base_path, self.scene_info["image_paths"][idx0])
+        img_path1 = os.path.join(self.base_path, self.scene_info["image_paths"][idx1])
+        img0, mask0, scale0 = self._read_gray(
+            img_path0, self.long_dim, self.div_factor, self.image_padding
+        )
+        img1, mask1, scale1 = self._read_gray(
+            img_path1, self.long_dim, self.div_factor, self.image_padding
+        )
+
+        if self.mode in ["train", "val"]:
+            depth_path0 = os.path.join(
+                self.base_path, self.scene_info["depth_paths"][idx0]
+            )
+            depth_path1 = os.path.join(
+                self.base_path, self.scene_info["depth_paths"][idx1]
+            )
+            depth0 = self._read_depth(depth_path0, self.depth_max_size)
+            depth1 = self._read_depth(depth_path1, self.depth_max_size)
+        else:
+            depth0 = depth1 = torch.tensor([])
+
+        K0 = torch.from_numpy(self.scene_info["intrinsics"][idx0]).double()
+        K1 = torch.from_numpy(self.scene_info["intrinsics"][idx1]).double()
+
+        T0 = torch.from_numpy(self.scene_info["poses"][idx0]).double()
+        T1 = torch.from_numpy(self.scene_info["poses"][idx1]).double()
+        T_0to1 = T1 @ inverse_transformation(T0)
+
+        data = {
+            "image0": img0,  # (1, h, w)
+            "depth0": depth0,  # (h, w)
+            "image1": img1,
+            "depth1": depth1,
+            "T_0to1": T_0to1,  # (4, 4)
+            "K0": K0,  # (3, 3)
+            "K1": K1,
+            "scale0": scale0,  # [scale_w, scale_h]
+            "scale1": scale1,
+            "dataset_name": "MegaDepth",
+            "scene_id": self.scene_id,
+            "pair_id": idx,
+            "pair_names": (
+                self.scene_info["image_paths"][idx0],
+                self.scene_info["image_paths"][idx1],
+            ),
+        }
+
+        if mask0 is not None:
+            assert self.coarse_scale is not None
+            mask0, mask1 = F.interpolate(
+                torch.stack([mask0, mask1], dim=0)[None].float(),
+                scale_factor=self.coarse_scale,
+                mode="nearest",
+                recompute_scale_factor=False,
+            )[0].bool()
+            data.update({"mask0": mask0, "mask1": mask1})
+
+        return data
+
+    def _read_gray(self, path, long_dim=None, div_factor=None, padding=False):
+        img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+        old_size = img.shape[:2][::-1]
+        new_size = get_new_size(old_size, long_dim, div_factor)
+        img = cv2.resize(img, new_size)
+        scale = torch.tensor(old_size, dtype=torch.float) / torch.tensor(
+            new_size, dtype=torch.float
+        )
+
+        mask = None
+        if padding:
+            img, mask = pad_bottom_right(img, pad_size=long_dim, ret_mask=True)
+
+        img = torch.from_numpy(img).float() / 255.0
+        img = img.unsqueeze(0)
+        mask = torch.from_numpy(mask)
+        return img, mask, scale
+
+    def _read_depth(self, path, pad_size=None):
+        depth = np.array(h5py.File(path, "r")["depth"])
+        if pad_size is not None:
+            depth, _ = pad_bottom_right(depth, pad_size, ret_mask=False)
+        depth = torch.from_numpy(depth).float()
+        return depth
