@@ -48,39 +48,30 @@ class MegaDepth(Dataset):
         self,
         base_path,
         npz_path,
-        long_dim=None,
-        image_padding=False,
-        depth_padding=False,
-        mode="train",
-        min_overlap_score=0.4,
-        div_factor=8,
-        coarse_scale=1 / 8,
+        mode,
+        config,
     ):
         super().__init__()
 
-        if mode == "train":
-            assert long_dim is not None and image_padding and depth_padding
-        if mode == "test" and min_overlap_score != 0:
-            min_overlap_score = 0
+        assert mode in ["train", "val", "test"], f"Invalid mode {mode}"
 
         self.base_path = base_path
         self.mode = mode
         self.scene_id = npz_path.split(".")[0]
-        self.long_dim = long_dim
-        self.div_factor = div_factor
-        self.image_padding = image_padding
-        self.depth_padding = depth_padding
-        self.min_overlap_score = min_overlap_score
-        self.depth_max_size = 2000 if depth_padding else None
-        self.coarse_scale = coarse_scale
+        self.long_dim = config["long_dim"]
+        self.div_factor = config["div_factor"]
+        self.coarse_scale = config["coarse_scale"]
+        self.image_padding = config["image_padding"]
+        self.depth_padding = config["depth_padding"]
+        self.depth_max_size = 2000 if self.depth_padding else None
+        self.min_overlap_score = config["min_overlap_score"]
 
         self.scene_info = np.load(npz_path, allow_pickle=True)
         self.pair_infos = [
             copy.deepcopy(pair_info)
             for pair_info in self.scene_info["pair_infos"]
-            if pair_info[1] > min_overlap_score
+            if pair_info[1] > self.min_overlap_score
         ]
-        del self.scene_info["pair_infos"]
 
     def __len__(self):
         return len(self.pair_infos)
