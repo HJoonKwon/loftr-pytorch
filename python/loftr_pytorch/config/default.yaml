@@ -49,3 +49,23 @@ matcher:
     border_rm: 2
     match_type: 'dual_softmax'
     temperature: 0.1
+  
+
+dataset:
+  megadepth:
+    train:
+      long_dim: 640 # >=32GB GPU is required for 840x840
+      min_overlap_score: 0
+      coarse_scale: 0.125
+      div_factor: 8
+      depth_padding: True
+      image_padding: True
+    test:
+      long_dim: 640
+      min_overlap_score: 0
+      coarse_scale: 0.125
+      div_factor: 8
+      image_padding: True
+      depth_padding: True
+
+      
