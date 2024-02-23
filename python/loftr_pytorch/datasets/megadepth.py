@@ -70,6 +70,7 @@ def load_megadepth_dataloader(base_path, npz_paths, mode, config, **loader_param
     dataset = load_concatenated_megadepth(
         base_path, npz_paths, mode, config["dataset"]["megadepth"][mode]
     )
+    # TODO:: mode dependent sampler
     sampler = RandomConcatSampler(
         dataset, **config["trainer"][config["trainer"]["sampler"]]
     )
