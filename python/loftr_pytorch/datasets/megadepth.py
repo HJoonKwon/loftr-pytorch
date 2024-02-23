@@ -1,6 +1,6 @@
 import torch
 import torch.nn.functional as F
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, ConcatDataset
 import numpy as np
 import h5py
 import os, copy
@@ -41,6 +41,14 @@ def pad_bottom_right(img, pad_size, ret_mask=False):
         mask = np.zeros((pad_size, pad_size), dtype=bool)
         mask[: img.shape[0], : img.shape[1]] = True
     return padded, mask
+
+
+def load_concatenated_megadepth(base_path, npz_paths, mode, config):
+    datasets = []
+    for npz_path in npz_paths:
+        dataset = MegaDepth(base_path, npz_path, mode, config)
+        datasets.append(dataset)
+    return ConcatDataset(datasets)
 
 
 class MegaDepth(Dataset):
