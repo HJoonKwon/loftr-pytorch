@@ -8,7 +8,7 @@ class FineMatcher(nn.Module):
         super().__init__()
         self.window = window
 
-    def forward(self, feat_f0, feat_f1, scale, mkpts0_c, mkpts1_c):
+    def forward(self, feat_f0, feat_f1, mkpts0_c, mkpts1_c):
         """
         Args:
             feat0 (torch.Tensor): [M, window**2, C]
@@ -53,14 +53,17 @@ class FineMatcher(nn.Module):
 
         # TODO:: expec_f for training
 
-        return self._fine_match(expected_coords, scale, mkpts0_c, mkpts1_c)
+        return self._fine_match(expected_coords, mkpts0_c, mkpts1_c)
 
     @torch.no_grad()
-    def _fine_match(self, expected_coords, scale, mkpts0_c, mkpts1_c):
+    def _fine_match(self, expected_coords, mkpts0_c, mkpts1_c):
 
         mkpts0_f = mkpts0_c
-        mkpts1_f = (
-            mkpts1_c + expected_coords * (self.window // 2) * scale
+        mkpts1_f = mkpts1_c + expected_coords * (
+            self.window // 2
         )  # TODO:: M and M' are different for training.
 
         return mkpts0_f, mkpts1_f
+
+    def rescale_mkpts_to_image(self, mkpts0, mkpts1, scale0, scale1):
+        return mkpts0 * scale0, mkpts1 * scale1

@@ -9,7 +9,6 @@ def test_fine_matcher():
 
     hw0_i = (512, 512)
     hw0_f = (256, 256)
-    scale = hw0_i[0] / hw0_f[0]
 
     mkpts0_c = torch.randint(window - 1, (M, 2))
     mkpts1_c = torch.randint(window - 1, (M, 2))
@@ -18,6 +17,9 @@ def test_fine_matcher():
     feat_f1 = torch.randn(M, window**2, C)
 
     model = FineMatcher(window=window)
-    mkpts0_f, mkpts1_f = model(feat_f0, feat_f1, scale, mkpts0_c, mkpts1_c)
+    mkpts0_f, mkpts1_f = model(feat_f0, feat_f1, mkpts0_c, mkpts1_c)
+
+    scale = hw0_i[0] / hw0_f[0]
+    mkpts0_f, mkpts1_f = model.rescale_mkpts_to_image(mkpts0_f, mkpts1_f, scale, scale)
     assert mkpts0_f.shape == (M, 2)
     assert mkpts1_f.shape == (M, 2)

@@ -24,7 +24,7 @@ class LoFTR(nn.Module):
         self.coarse_to_fine = CoarseToFine(config["coarse_to_fine"])
         self.fine_matcher = FineMatcher()
 
-    def forward(self, image0, image1, mask0=None, mask1=None):
+    def forward(self, data):
         """
         Args:
             data (dict): {
@@ -34,6 +34,7 @@ class LoFTR(nn.Module):
                     'mask1'(optional) : (torch.Tensor): (B, hc, wc)
                 }
         """
+        image0, image1 = data["image0"], data["image1"]
         hw0_i = image0.shape[2:]
         hw1_i = image1.shape[2:]
 
@@ -61,6 +62,8 @@ class LoFTR(nn.Module):
             .permute(0, 2, 3, 1)
             .view(B, h1_c * w1_c, -1)
         )
+        mask0 = data["mask0"] if "mask0" in data else None
+        mask1 = data["mask1"] if "mask1" in data else None
 
         mask_c0 = mask_c1 = None
         if mask0:
@@ -69,10 +72,16 @@ class LoFTR(nn.Module):
 
         hw0_c = (h0_c, w0_c)
         hw1_c = (h1_c, w1_c)
-        scale = hw0_i[0] / hw0_c[0]  # TODO:: scale multiplication
 
         batch_ids, l_ids, s_ids, gt_mask, m_bids, mkpts0_c, mkpts1_c, mconf = (
-            self.coarse_matcher(feat_c0, feat_c1, scale, hw0_c, hw1_c, mask_c0, mask_c1)
+            self.coarse_matcher(feat_c0, feat_c1, hw0_c, hw1_c, mask_c0, mask_c1)
+        )
+
+        scale = hw0_i[0] / hw0_c[0]
+        scale0 = scale * data["scale0"] if "scale0" in data else scale
+        scale1 = scale * data["scale1"] if "scale1" in data else scale
+        mkpts0_c, mkpts1_c = self.coarse_matcher.rescale_mkpts_to_image(
+            mkpts0_c, mkpts1_c, scale0, scale1
         )
 
         feat_f0_unfold, feat_f1_unfold = self.coarse_to_fine(
@@ -83,8 +92,10 @@ class LoFTR(nn.Module):
                 feat_f0_unfold, feat_f1_unfold
             )
 
-        scale = hw0_i[0] / hw0_f[0]  # TODO:: scale multiplication
-
-        return self.fine_matcher(
-            feat_f0_unfold, feat_f1_unfold, scale, mkpts0_c, mkpts1_c
+        mkpts0_f, mkpts1_f = self.fine_matcher(
+            feat_f0_unfold, feat_f1_unfold, mkpts0_c, mkpts1_c
         )
+
+        scale = hw0_i[0] / hw0_f[0]  # TODO:: scale multiplication
+        scale1 = data["scale1"][batch_ids] if "scale1" in data else scale
+        return self.fine_matcher.rescale_mkpts_to_image(mkpts0_f, mkpts1_f, 1, scale1)

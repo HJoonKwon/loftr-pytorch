@@ -22,4 +22,5 @@ def test_compile():
         model = torch.compile(model)
         x0 = torch.rand(1, 1, 640, 480).cuda().to(device)
         x1 = torch.rand(1, 1, 640, 480).cuda().to(device)
-        model(x0, x1)
+        data = {"image0": x0, "image1": x1}
+        model(data)
