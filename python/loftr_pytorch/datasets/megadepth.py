@@ -1,6 +1,6 @@
 import torch
 import torch.nn.functional as F
-from torch.utils.data import Dataset, ConcatDataset
+from torch.utils.data import Dataset, ConcatDataset, DataLoader
 import numpy as np
 import h5py
 import os, copy
@@ -49,6 +49,25 @@ def load_concatenated_megadepth(base_path, npz_paths, mode, config):
         dataset = MegaDepth(base_path, npz_path, mode, config)
         datasets.append(dataset)
     return ConcatDataset(datasets)
+
+
+def load_megadepth_dataloader(base_path, npz_paths, mode, config, **loader_params):
+    """
+    Args:
+        base_path (str): path to the MegaDepth dataset
+        npz_paths (list): list of paths to the npz files
+        mode (str): "train", "val" or "test"
+        config (dict): configuration for the MegaDepth dataset
+        loader_params (dict): parameters for DataLoader
+
+    Returns:
+        DataLoader: DataLoader for MegaDepth dataset
+
+    NOTE: loader_params inlcude sampler, batch_size, shuffle, num_workers, etc.
+    """
+    assert mode in ["train", "val", "test"], f"Invalid mode {mode}"
+    dataset = load_concatenated_megadepth(base_path, npz_paths, mode, config[mode])
+    return DataLoader(dataset, **loader_params)
 
 
 class MegaDepth(Dataset):
