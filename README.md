@@ -5,6 +5,9 @@ Reimplementation of LoFTR in PyTorch, end-to-end transformer model for image mat
 Pytorch >= 2.2.0 is required. The code is tested with PyTorch 2.2.0 and Python 3.10.13.
 
 ## Differences from the original LoFTR
+- [ ] Remove pytorch lightning dependency for training.
+- [ ] Support torch.compile
+- [ ] Accelerate inference with layer fusion
 - [x] Instead of einops, torch native functions are used for dealing with dimensions.
 - [x] The attention mechanism implemented in Pytorch is used instead of the original attention mechanism. The recent one includes Flash Attention and Memory Attention, which are known to be more faster and efficient.
 - [ ] The original Resnet block for downsampling is using convolutions 1x1 with stride 2, which might have caused the loss of information. The current implementation uses convolutions 3x3 with stride 2.
