@@ -52,8 +52,15 @@ for scene_name in tqdm(os.listdir(base_depth_path)):
     current_output_path = os.path.join(output_path, scene_name)
     os.makedirs(current_output_path, exist_ok=True)
 
+    output_image_dir = os.path.join(current_output_path, 'images')
+    os.makedirs(output_image_dir, exist_ok=True)
+
     image_path = os.path.join(base_depth_path, scene_name, "dense0", "imgs")
     if not os.path.exists(image_path):
+        continue
+
+    if len(os.listdir(image_path)) == len(os.listdir(output_image_dir)):
+        print(f"Skip {scene_name} as it has been processed.") 
         continue
 
     # Find the maximum image size in scene.
@@ -80,7 +87,7 @@ for scene_name in tqdm(os.listdir(base_depth_path)):
 
     # Transform the reconstruction to raw text format.
     sparse_txt_path = os.path.join(current_output_path, "sparse-txt")
-    os.mkdir(sparse_txt_path)
+    os.makedirs(sparse_txt_path, exist_ok=True)
     subprocess.call(
         [
             os.path.join(colmap_path, "colmap"),
