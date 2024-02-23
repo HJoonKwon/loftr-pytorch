@@ -6,6 +6,7 @@ import h5py
 import os, copy
 import cv2
 from loftr_pytorch.supervision.utils import inverse_transformation
+from loftr_pytorch.datasets.sampler import RandomConcatSampler
 
 
 def get_new_size(size, long_dim=None, div_factor=None):
@@ -57,7 +58,7 @@ def load_megadepth_dataloader(base_path, npz_paths, mode, config, **loader_param
         base_path (str): path to the MegaDepth dataset
         npz_paths (list): list of paths to the npz files
         mode (str): "train", "val" or "test"
-        config (dict): configuration for the MegaDepth dataset
+        config (dict): full configuration
         loader_params (dict): parameters for DataLoader
 
     Returns:
@@ -66,8 +67,13 @@ def load_megadepth_dataloader(base_path, npz_paths, mode, config, **loader_param
     NOTE: loader_params inlcude sampler, batch_size, shuffle, num_workers, etc.
     """
     assert mode in ["train", "val", "test"], f"Invalid mode {mode}"
-    dataset = load_concatenated_megadepth(base_path, npz_paths, mode, config[mode])
-    return DataLoader(dataset, **loader_params)
+    dataset = load_concatenated_megadepth(
+        base_path, npz_paths, mode, config["dataset"]["megadepth"][mode]
+    )
+    sampler = RandomConcatSampler(
+        dataset, **config["trainer"][config["trainer"]["sampler"]]
+    )
+    return DataLoader(dataset, sampler=sampler, **loader_params)
 
 
 class MegaDepth(Dataset):
