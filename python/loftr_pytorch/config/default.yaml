@@ -60,6 +60,13 @@ dataset:
       div_factor: 8
       depth_padding: True
       image_padding: True
+    val:
+      long_dim: 640 # >=32GB GPU is required for 840x840
+      min_overlap_score: 0
+      coarse_scale: 0.125
+      div_factor: 8
+      depth_padding: True
+      image_padding: True
     test:
       long_dim: 640
       min_overlap_score: 0
@@ -67,5 +74,14 @@ dataset:
       div_factor: 8
       image_padding: True
       depth_padding: True
+  
+trainer:
+  sampler: 'scene_balance' # options: ['scene_balance', None]
+  scene_balance:
+    n_samples_per_subset: 200
+    subset_replacement: True 
+    shuffle: True 
+    repeat: 1
+    seed: 42
 
       
