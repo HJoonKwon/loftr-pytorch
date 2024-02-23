@@ -78,8 +78,8 @@ class LoFTR(nn.Module):
         )
 
         scale = hw0_i[0] / hw0_c[0]
-        scale0 = scale * data["scale0"] if "scale0" in data else scale
-        scale1 = scale * data["scale1"] if "scale1" in data else scale
+        scale0 = scale * data["scale0"][batch_ids] if "scale0" in data else scale
+        scale1 = scale * data["scale1"][batch_ids] if "scale1" in data else scale
         mkpts0_c, mkpts1_c = self.coarse_matcher.rescale_mkpts_to_image(
             mkpts0_c, mkpts1_c, scale0, scale1
         )
@@ -96,6 +96,6 @@ class LoFTR(nn.Module):
             feat_f0_unfold, feat_f1_unfold, mkpts0_c, mkpts1_c
         )
 
-        scale = hw0_i[0] / hw0_f[0]  # TODO:: scale multiplication
+        scale = hw0_i[0] / hw0_f[0]
         scale1 = data["scale1"][batch_ids] if "scale1" in data else scale
         return self.fine_matcher.rescale_mkpts_to_image(mkpts0_f, mkpts1_f, 1, scale1)
