@@ -139,6 +139,7 @@ class MegaDepth(Dataset):
         T0 = torch.from_numpy(self.scene_info["poses"][idx0]).double()
         T1 = torch.from_numpy(self.scene_info["poses"][idx1]).double()
         T_0to1 = T1 @ inverse_transformation(T0)
+        T_1to0 = inverse_transformation(T_0to1)
 
         data = {
             "image0": img0,  # (1, h, w)
@@ -146,6 +147,7 @@ class MegaDepth(Dataset):
             "image1": img1,
             "depth1": depth1,
             "T_0to1": T_0to1,  # (4, 4)
+            "T_1to0": T_1to0,
             "K0": K0,  # (3, 3)
             "K1": K1,
             "scale0": scale0,  # [scale_w, scale_h]
