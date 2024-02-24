@@ -17,4 +17,4 @@ Pytorch >= 2.2.0 is required. The code is tested with PyTorch 2.2.0 and Python 3
 - [ ] Support ONNX conversion
 - [ ] Add unit tests for improving readability and understanding.
 - [ ] border_rm is constant in the original LoFTR, but it should change according to the window size..(?). No problem with border_rm = 2 when window_size = 5 because padding is 2 for fine preprocessing.
-- [ ] Make the LoFTR model compilable to accelerate both inference and training speed.
+- [x] Make the LoFTR model compilable to accelerate both inference and training speed.
