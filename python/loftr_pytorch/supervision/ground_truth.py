@@ -84,23 +84,24 @@ def spvs_coarse(data, coarse_scale: float):
             (pt[..., 0] < 0) + (pt[..., 0] >= w) + (pt[..., 1] < 0) + (pt[..., 1] >= h)
         )
 
+    wkpts0_c_round = wkpts0_c[:, :, :].round().long()
+    wkpts1_c_round = wkpts1_c[:, :, :].round().long()
+
     if "mask0" in data:
         data["mask0"] = data["mask0"] * (
-            ~out_bound_mask(wkpts0_c, w1_c, h1_c).view(N, h0_c, w0_c).bool()
+            ~out_bound_mask(wkpts0_c_round, w1_c, h1_c).view(N, h0_c, w0_c).bool()
         )
     if "mask1" in data:
         data["mask1"] = data["mask1"] * (
-            ~out_bound_mask(wkpts1_c, w0_c, h0_c).view(N, h1_c, w1_c).bool()
+            ~out_bound_mask(wkpts1_c_round, w0_c, h0_c).view(N, h1_c, w1_c).bool()
         )
 
-    wkpts0_c[data["mask0"].view(N, h0_c * w0_c) == 0, :] = float("-inf")
-    wkpts1_c[data["mask1"].view(N, h1_c * w1_c) == 0, :] = float("-inf")
+    wkpts0_c_round[data["mask0"].view(N, h0_c * w0_c) == 0, :] = -1000
+    wkpts1_c_round[data["mask1"].view(N, h1_c * w1_c) == 0, :] = -1000
 
-    wkpts0_c_round = wkpts0_c[:, :, :].round().long()
     nearest_index1 = (
         wkpts0_c_round[..., 0] + wkpts0_c_round[..., 1] * w1_c
     )  # (N, h0_c * w0_c)
-    wkpts1_c_round = wkpts1_c[:, :, :].round().long()
     nearest_index0 = (
         wkpts1_c_round[..., 0] + wkpts1_c_round[..., 1] * w0_c
     )  # (N, h1_c * w1_c)
