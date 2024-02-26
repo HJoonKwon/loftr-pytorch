@@ -44,7 +44,7 @@ def warp_grid(grid_pts0, depth0, T_0to1, K0, K1):
         K1 @ warped_grid_pts0_cam
     )  # (B, 3, 3) @ (B, 3, L) = (B, 3, L)
     warped_grid_pts0_homogeneous = warped_grid_pts0_unnormalized / (
-        warped_grid_pts0_unnormalized[:, [2], :] + 1e-5
+        warped_grid_pts0_unnormalized[:, [2], :] + 1e-4
     )
     warped_grid_pts0 = warped_grid_pts0_homogeneous[:, :2, :].transpose(1, 2)
     warped_grid_pts0[grid_pts0_depth == 0, :] = float("-inf")
@@ -88,16 +88,15 @@ def spvs_coarse(data, coarse_scale: float):
     wkpts1_c_round = wkpts1_c[:, :, :].round().long()
 
     if "mask0" in data:
-        data["mask0"] = data["mask0"] * (
+        wkpts0_c_mask = data["mask0"] * (
             ~out_bound_mask(wkpts0_c_round, w1_c, h1_c).view(N, h0_c, w0_c).bool()
         )
+        wkpts0_c_round[wkpts0_c_mask.view(N, h0_c * w0_c) == 0, :] = -1
     if "mask1" in data:
-        data["mask1"] = data["mask1"] * (
+        wkpts1_c_mask = data["mask1"] * (
             ~out_bound_mask(wkpts1_c_round, w0_c, h0_c).view(N, h1_c, w1_c).bool()
         )
-
-    wkpts0_c_round[data["mask0"].view(N, h0_c * w0_c) == 0, :] = -1000
-    wkpts1_c_round[data["mask1"].view(N, h1_c * w1_c) == 0, :] = -1000
+        wkpts1_c_round[wkpts1_c_mask.view(N, h1_c * w1_c) == 0, :] = -1
 
     nearest_index1 = (
         wkpts0_c_round[..., 0] + wkpts0_c_round[..., 1] * w1_c
