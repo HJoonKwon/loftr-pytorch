@@ -66,7 +66,18 @@ class CoarseMatcher(nn.Module):
         self.temperature = config["temperature"]
         self.match_type = config["match_type"]
 
-    def forward(self, feat0, feat1, hw0_c, hw1_c, mask0=None, mask1=None):
+    def forward(
+        self,
+        feat0,
+        feat1,
+        hw0_c,
+        hw1_c,
+        scale,
+        scale0=None,
+        scale1=None,
+        mask0=None,
+        mask1=None,
+    ):
         """
         Args:
             feat0 (torch.Tensor): [B, L, C] where L = h0c * w0c
@@ -98,10 +109,14 @@ class CoarseMatcher(nn.Module):
         else:
             raise NotImplemented
 
-        return self._coarse_match(conf_matrix, hw0_c, hw1_c, mask0, mask1)
+        return self._coarse_match(
+            conf_matrix, hw0_c, hw1_c, scale, scale0, scale1, mask0, mask1
+        )
 
     @torch.no_grad()
-    def _coarse_match(self, conf_matrix, hw0_c, hw1_c, mask0, mask1):
+    def _coarse_match(
+        self, conf_matrix, hw0_c, hw1_c, scale, scale0, scale1, mask0, mask1
+    ):
         """
         Args:
             conf_matrix (torch.Tensor): [B, L, S]
@@ -150,9 +165,11 @@ class CoarseMatcher(nn.Module):
         mconf = conf_matrix[batch_ids, l_ids, s_ids]  # (M, ) where M = len(batch_ids)
 
         # 5. scale indicies up to original resolution
+        scale0 = scale0[batch_ids] if scale0 else scale
+        scale1 = scale1[batch_ids] if scale1 else scale
 
-        mkpts0 = torch.stack([l_ids % hw0_c[1], l_ids // hw0_c[1]], dim=1)
-        mkpts1 = torch.stack([s_ids % hw1_c[1], s_ids // hw1_c[1]], dim=1)
+        mkpts0 = torch.stack([l_ids % hw0_c[1], l_ids // hw0_c[1]], dim=1) * scale0
+        mkpts1 = torch.stack([s_ids % hw1_c[1], s_ids // hw1_c[1]], dim=1) * scale1
 
         gt_mask = mconf == 0
         m_bids = batch_ids[mconf != 0]  # mconf == 0 => gt matches
@@ -161,6 +178,3 @@ class CoarseMatcher(nn.Module):
         mconf = mconf[mconf != 0]
 
         return batch_ids, l_ids, s_ids, gt_mask, m_bids, mkpts0_c, mkpts1_c, mconf
-
-    def rescale_mkpts_to_image(self, mkpts0, mkpts1, scale0, scale1):
-        return mkpts0 * scale0, mkpts1 * scale1

@@ -73,15 +73,14 @@ class LoFTR(nn.Module):
         hw0_c = (h0_c, w0_c)
         hw1_c = (h1_c, w1_c)
 
-        batch_ids, l_ids, s_ids, gt_mask, m_bids, mkpts0_c, mkpts1_c, mconf = (
-            self.coarse_matcher(feat_c0, feat_c1, hw0_c, hw1_c, mask_c0, mask_c1)
-        )
-
         scale = hw0_i[0] / hw0_c[0]
-        scale0 = scale * data["scale0"][batch_ids] if "scale0" in data else scale
-        scale1 = scale * data["scale1"][batch_ids] if "scale1" in data else scale
-        mkpts0_c, mkpts1_c = self.coarse_matcher.rescale_mkpts_to_image(
-            mkpts0_c, mkpts1_c, scale0, scale1
+        scale0 = scale * data["scale0"] if "scale0" in data else None
+        scale1 = scale * data["scale1"] if "scale1" in data else None
+
+        batch_ids, l_ids, s_ids, gt_mask, m_bids, mkpts0_c, mkpts1_c, mconf = (
+            self.coarse_matcher(
+                feat_c0, feat_c1, hw0_c, hw1_c, scale, scale0, scale1, mask_c0, mask_c1
+            )
         )
 
         feat_f0_unfold, feat_f1_unfold = self.coarse_to_fine(
@@ -92,10 +91,9 @@ class LoFTR(nn.Module):
                 feat_f0_unfold, feat_f1_unfold
             )
 
-        mkpts0_f, mkpts1_f = self.fine_matcher(
-            feat_f0_unfold, feat_f1_unfold, mkpts0_c, mkpts1_c
-        )
-
         scale = hw0_i[0] / hw0_f[0]
-        scale1 = data["scale1"][batch_ids] if "scale1" in data else scale
-        return self.fine_matcher.rescale_mkpts_to_image(mkpts0_f, mkpts1_f, 1, scale1)
+        scale = scale * data["scale1"][batch_ids] if "scale1" in data else scale
+
+        return self.fine_matcher(
+            feat_f0_unfold, feat_f1_unfold, mkpts0_c, mkpts1_c, scale
+        )
