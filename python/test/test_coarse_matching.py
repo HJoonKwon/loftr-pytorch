@@ -40,6 +40,4 @@ def test_coarse_matcher():
     scale = hw0_i[0] / hw0_c[0]
 
     # perform coarse matching
-    _, _, _, _, _, mkpts0_c, mkpts1_c, _ = model(feat0, feat1, hw0_c, hw1_c)
-
-    model.rescale_mkpts_to_image(mkpts0_c, mkpts1_c, scale, scale)
+    model(feat0, feat1, hw0_c, hw1_c, scale)
