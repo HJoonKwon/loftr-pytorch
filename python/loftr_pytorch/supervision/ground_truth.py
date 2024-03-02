@@ -133,3 +133,6 @@ def spvs_coarse(data, coarse_scale: float):
 
     data.update({"spv_b_ids": b_ids, "spv_i_ids": i_ids, "spv_j_ids": j_ids})
     data.update({"spv_w_pt0_i": wpts0_i, "spv_pt1_i": grid_pt1_i})
+    data.update(
+        {"spv_scores": correct_0to1.sum(dim=1) / (data["mask0"].sum(dim=(1, 2)))}
+    )
