@@ -154,6 +154,7 @@ class MegaDepth(Dataset):
             "scale1": scale1,
             "dataset_name": "MegaDepth",
             "scene_id": self.scene_id,
+            "overlap_score": overlap_score,
             "pair_id": idx,
             "pair_names": (
                 self.scene_info["image_paths"][idx0],
