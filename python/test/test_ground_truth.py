@@ -13,9 +13,10 @@ def test_warp_grid():
     grid_xy = grid_xy.permute(1, 2, 0).reshape(1, hc * wc, -1).repeat(B, 1, 1) * (
         H // hc
     )
-    depth0 = torch.rand(B, H, W)
-    T_0to1 = torch.eye(3, 4).unsqueeze(0).repeat(B, 1, 1)
-    K0 = torch.eye(3).unsqueeze(0).repeat(B, 1, 1)
+    grid_xy = grid_xy.double()
+    depth0 = torch.randint(1, 10, (B, H, W)).double()
+    T_0to1 = torch.eye(3, 4).unsqueeze(0).repeat(B, 1, 1).double()
+    K0 = torch.eye(3).unsqueeze(0).repeat(B, 1, 1).double()
     K1 = K0.clone()
 
     warped_grid_pts0 = warp_grid(
