@@ -15,12 +15,16 @@ def test_compile():
     num_cuda_devices = torch.cuda.device_count()
     device = f"cuda:{num_cuda_devices-1}" if torch.cuda.is_available() else "cpu"
 
+    # UserWarning: TensorFloat32 tensor cores for float32 matrix multiplication available but not enabled.
+    # Consider setting `torch.set_float32_matmul_precision('high')` for better performance.
+    torch.set_float32_matmul_precision("high")
+
     with torch.device(device):
         if device.startswith("cuda"):
             device = "cuda"
         model = LoFTR(config).eval().to(device)
         model = torch.compile(model)
-        x0 = torch.rand(1, 1, 640, 480).cuda().to(device)
-        x1 = torch.rand(1, 1, 640, 480).cuda().to(device)
+        x0 = torch.rand(1, 1, 640, 480).to(device)
+        x1 = torch.rand(1, 1, 640, 480).to(device)
         data = {"image0": x0, "image1": x1}
         model(data)
