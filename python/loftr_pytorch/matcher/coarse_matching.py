@@ -164,6 +164,8 @@ class CoarseMatcher(nn.Module):
         s_ids = all_s_ids[batch_ids, l_ids]  # all_s_ids = (B, L) filled with s_ids
         mconf = conf_matrix[batch_ids, l_ids, s_ids]  # (M, ) where M = len(batch_ids)
 
+        ## TODO:: Implement sampling for training
+
         # 5. scale indicies up to original resolution
         scale0 = scale0[batch_ids] if scale0 else scale
         scale1 = scale1[batch_ids] if scale1 else scale
