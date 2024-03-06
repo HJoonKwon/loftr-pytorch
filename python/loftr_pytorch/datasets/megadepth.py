@@ -146,6 +146,8 @@ class MegaDepth(Dataset):
             "depth0": depth0,  # (h, w)
             "image1": img1,
             "depth1": depth1,
+            "hw0_i": img0.shape[-2:],  # (h, w)
+            "hw1_i": img1.shape[-2:],
             "T_0to1": T_0to1,  # (4, 4)
             "T_1to0": T_1to0,
             "K0": K0,  # (3, 3)
