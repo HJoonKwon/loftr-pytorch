@@ -53,9 +53,9 @@ def warp_grid(grid_pts0, depth0, T_0to1, K0, K1):
 
 
 @torch.no_grad()
-def spvs_coarse(data, coarse_scale: float):
+def spvs_coarse(data, config):
 
-    scale = 1 / coarse_scale
+    scale = config["backbone"]["resolution"][0]
     scale0 = scale * data["scale0"][:, None] if "scale0" in data else scale
     scale1 = scale * data["scale1"][:, None] if "scale1" in data else scale
 
@@ -131,8 +131,36 @@ def spvs_coarse(data, coarse_scale: float):
         i_ids = torch.empty(0)
         j_ids = torch.empty(0)
 
-    data.update({"spv_b_ids": b_ids, "spv_i_ids": i_ids, "spv_j_ids": j_ids})
-    data.update({"spv_w_pt0_i": wpts0_i, "spv_pt1_i": grid_pt1_i})
-    data.update(
-        {"spv_scores": correct_0to1.sum(dim=1) / (data["mask0"].sum(dim=(1, 2)))}
+    coarse_gt = {
+        "conf_matrix_gt": conf_matrix_gt,
+        "spv_b_ids": b_ids,
+        "spv_i_ids": i_ids,
+        "spv_j_ids": j_ids,
+        "spv_w_pt0_i": wpts0_i,
+        "spv_pt1_i": grid_pt1_i,
+        "spv_scores": correct_0to1.sum(dim=1) / (data["mask0"].sum(dim=(1, 2))),
+    }
+    return coarse_gt
+
+
+@torch.no_grad()
+def spvs_fine(data, coarse_gt, coarse_prediction, config):
+    resolution = config["backbone"]["resolution"][1]
+    window = config["coarse_to_fine"]["window"]
+    scale = resolution
+    radius = window // 2
+
+    # coarse prediction
+    b_ids, l_ids, s_ids = (
+        coarse_prediction["b_ids"],
+        coarse_prediction["l_ids"],
+        coarse_prediction["s_ids"],
     )
+
+    scale1 = scale * data["scale1"][b_ids] if "scale1" in data else scale
+    wpts0_i = coarse_gt["spv_w_pt0_i"][b_ids, l_ids]
+    grid_pt1_i = coarse_gt["spv_pt1_i"][b_ids, s_ids]
+
+    expec_f_gt = (wpts0_i - grid_pt1_i) / scale1 / radius
+    fine_gt = {"expec_f": expec_f_gt}
+    return fine_gt
