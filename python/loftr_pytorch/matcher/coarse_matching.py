@@ -87,7 +87,7 @@ class CoarseMatcher(nn.Module):
             mask1 (torch.Tensor): [B, S] (optional). Related to padding.
         Update:
             data (dict): {
-                'batch_ids' (torch.Tensor): [M'],
+                'b_ids' (torch.Tensor): [M'],
                 'l_ids' (torch.Tensor): [M'], Dimension of L
                 's_ids' (torch.Tensor): [M'], Dimension of S
                 'gt_mask' (torch.Tensor): [M'],
@@ -123,7 +123,7 @@ class CoarseMatcher(nn.Module):
             data (dict): with keys ['hw0_i', 'hw1_i', 'hw0_c', 'hw1_c'], optionally ['mask0', 'mask1']
         Returns:
             coarse_matches (dict): {
-                'batch_ids' (torch.Tensor): [M'],
+                'b_ids' (torch.Tensor): [M'],
                 'l_ids' (torch.Tensor): [M'],
                 's_ids' (torch.Tensor): [M'],
                 'gt_mask' (torch.Tensor): [M'],
@@ -160,23 +160,23 @@ class CoarseMatcher(nn.Module):
 
         # 4. find valid corase matches with their confidence scores
         mask_max_values, all_s_ids = mask.max(dim=2)
-        batch_ids, l_ids = torch.where(mask_max_values)  # non-zero only
-        s_ids = all_s_ids[batch_ids, l_ids]  # all_s_ids = (B, L) filled with s_ids
-        mconf = conf_matrix[batch_ids, l_ids, s_ids]  # (M, ) where M = len(batch_ids)
+        b_ids, l_ids = torch.where(mask_max_values)  # non-zero only
+        s_ids = all_s_ids[b_ids, l_ids]  # all_s_ids = (B, L) filled with s_ids
+        mconf = conf_matrix[b_ids, l_ids, s_ids]  # (M, ) where M = len(b_ids)
 
         ## TODO:: Implement sampling for training
 
         # 5. scale indicies up to original resolution
-        scale0 = scale0[batch_ids] if scale0 else scale
-        scale1 = scale1[batch_ids] if scale1 else scale
+        scale0 = scale0[b_ids] if scale0 else scale
+        scale1 = scale1[b_ids] if scale1 else scale
 
         mkpts0 = torch.stack([l_ids % hw0_c[1], l_ids // hw0_c[1]], dim=1) * scale0
         mkpts1 = torch.stack([s_ids % hw1_c[1], s_ids // hw1_c[1]], dim=1) * scale1
 
         gt_mask = mconf == 0
-        m_bids = batch_ids[mconf != 0]  # mconf == 0 => gt matches
+        m_bids = b_ids[mconf != 0]  # mconf == 0 => gt matches
         mkpts0_c = mkpts0[mconf != 0]
         mkpts1_c = mkpts1[mconf != 0]
         mconf = mconf[mconf != 0]
 
-        return batch_ids, l_ids, s_ids, gt_mask, m_bids, mkpts0_c, mkpts1_c, mconf
+        return b_ids, l_ids, s_ids, gt_mask, m_bids, mkpts0_c, mkpts1_c, mconf
