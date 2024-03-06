@@ -35,10 +35,8 @@ class LoFTR(nn.Module):
                 }
         """
         image0, image1 = data["image0"], data["image1"]
-        hw0_i = image0.shape[2:]
-        hw1_i = image1.shape[2:]
 
-        if hw0_i == hw1_i:  # faster & better BN convergence
+        if data["hw0_i"] == data["hw1_i"]:  # faster & better BN convergence
             feats_c, feats_f = self.backbone(torch.cat([image0, image1], dim=0))
             (feat_c0, feat_c1), (feat_f0, feat_f1) = torch.chunk(
                 feats_c, 2, dim=0
@@ -48,7 +46,10 @@ class LoFTR(nn.Module):
                 image0
             ), self.backbone(image1)
 
-        hw0_f = feat_f0.shape[2:]
+        data["hw0_c"] = feat_c0.shape[2:]
+        data["hw1_c"] = feat_c1.shape[2:]
+        data["hw0_f"] = feat_f0.shape[2:]
+        data["hw1_f"] = feat_f1.shape[2:]
 
         B, _, h0_c, w0_c = feat_c0.shape
         feat_c0 = (
@@ -70,30 +71,21 @@ class LoFTR(nn.Module):
             mask_c0, mask_c1 = mask0.flatten(-2), mask1.flatten(-2)
         feat_c0, feat_c1 = self.transformer_coarse(feat_c0, feat_c1, mask_c0, mask_c1)
 
-        hw0_c = (h0_c, w0_c)
-        hw1_c = (h1_c, w1_c)
-
-        scale = hw0_i[0] / hw0_c[0]
-        scale0 = scale * data["scale0"] if "scale0" in data else None
-        scale1 = scale * data["scale1"] if "scale1" in data else None
-
-        batch_ids, l_ids, s_ids, gt_mask, m_bids, mkpts0_c, mkpts1_c, mconf = (
-            self.coarse_matcher(
-                feat_c0, feat_c1, hw0_c, hw1_c, scale, scale0, scale1, mask_c0, mask_c1
-            )
+        coarse_prediction = self.coarse_matcher(
+            feat_c0, feat_c1, data, mask_c0, mask_c1
         )
 
         feat_f0_unfold, feat_f1_unfold = self.coarse_to_fine(
-            feat_f0, feat_f1, feat_c0, feat_c1, batch_ids, l_ids, s_ids
+            feat_f0, feat_f1, feat_c0, feat_c1, coarse_prediction
         )
         if feat_f0_unfold.shape[0] != 0:
             feat_f0_unfold, feat_f1_unfold = self.transformer_fine(
                 feat_f0_unfold, feat_f1_unfold
             )
 
-        scale = hw0_i[0] / hw0_f[0]
-        scale = scale * data["scale1"][batch_ids] if "scale1" in data else scale
-
-        return self.fine_matcher(
-            feat_f0_unfold, feat_f1_unfold, mkpts0_c, mkpts1_c, scale
+        fine_prediction = self.fine_matcher(
+            feat_f0_unfold, feat_f1_unfold, coarse_prediction, data
         )
+
+        result = {"coarse": coarse_prediction, "fine": fine_prediction}
+        return result

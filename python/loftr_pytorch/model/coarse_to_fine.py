@@ -24,7 +24,7 @@ class CoarseToFine(nn.Module):
             if p.dim() > 1:
                 nn.init.kaiming_normal_(p, mode="fan_out", nonlinearity="relu")
 
-    def forward(self, feat_f0, feat_f1, feat_c0, feat_c1, batch_ids, l_ids, s_ids):
+    def forward(self, feat_f0, feat_f1, feat_c0, feat_c1, coarse_prediction):
         """
         Args:
             feat_f0 (torch.Tensor): [B, dim_fine, *hw0f]
@@ -39,7 +39,13 @@ class CoarseToFine(nn.Module):
 
         B, L, S = feat_c0.shape[0], feat_c0.shape[1], feat_c1.shape[1]
 
-        if batch_ids.shape[0] == 0:
+        b_ids, l_ids, s_ids = (
+            coarse_prediction["b_ids"],
+            coarse_prediction["l_ids"],
+            coarse_prediction["s_ids"],
+        )
+
+        if b_ids.shape[0] == 0:
             feat0 = torch.empty(0, self.window**3, self.dim_fine, device=feat_f0.device)
             feat1 = torch.empty(0, self.window**2, self.dim_fine, device=feat_f0.device)
             return feat0, feat1
@@ -54,7 +60,7 @@ class CoarseToFine(nn.Module):
             .transpose(-1, -2)
             .view(B, L, self.window**2, self.dim_fine)
         )
-        feat_f0_unfold = feat_f0_unfold[batch_ids, l_ids]  # (M, window**2, dim_fine)
+        feat_f0_unfold = feat_f0_unfold[b_ids, l_ids]  # (M, window**2, dim_fine)
 
         feat_f1_unfold = (
             F.unfold(
@@ -66,11 +72,11 @@ class CoarseToFine(nn.Module):
             .transpose(-1, -2)
             .view(B, S, self.window**2, self.dim_fine)
         )
-        feat_f1_unfold = feat_f1_unfold[batch_ids, s_ids]  # (M, window**2, dim_fine)
+        feat_f1_unfold = feat_f1_unfold[b_ids, s_ids]  # (M, window**2, dim_fine)
 
         if self.is_concat_enabled:
-            feat_c0_valid = feat_c0[batch_ids, l_ids]  # (M, dim_coarse)
-            feat_c1_valid = feat_c1[batch_ids, s_ids]
+            feat_c0_valid = feat_c0[b_ids, l_ids]  # (M, dim_coarse)
+            feat_c1_valid = feat_c1[b_ids, s_ids]
 
             # (2*M, dim_coarse) -> (2*M, dim_fine)
             feat_c_projected = self.coarse_to_fine_proj(

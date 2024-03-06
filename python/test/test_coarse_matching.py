@@ -37,7 +37,11 @@ def test_coarse_matcher():
         config["matcher"]["coarse"],
     )
 
-    scale = hw0_i[0] / hw0_c[0]
+    data = {}
+    data['hw0_i'] = hw0_i
+    data['hw1_i'] = hw1_i
+    data['hw0_c'] = hw0_c 
+    data['hw1_c'] = hw1_c 
 
     # perform coarse matching
-    model(feat0, feat1, hw0_c, hw1_c, scale)
+    model(feat0, feat1, data)

@@ -16,10 +16,13 @@ def test_fine_matcher():
     feat_f0 = torch.randn(M, window**2, C)
     feat_f1 = torch.randn(M, window**2, C)
 
-    scale = hw0_i[0] / hw0_f[0]
+    data = {"hw0_i": hw0_i, "hw0_f": hw0_f}
+    coarse_prediction = {"mkpts0_c": mkpts0_c, "mkpts1_c": mkpts1_c}
 
     model = FineMatcher(window=window)
-    mkpts0_f, mkpts1_f = model(feat_f0, feat_f1, mkpts0_c, mkpts1_c, scale)
+    fine_prediction = model(feat_f0, feat_f1, coarse_prediction, data)
+    mkpts0_f = fine_prediction["mkpts0_f"]
+    mkpts1_f = fine_prediction["mkpts1_f"]
 
     assert mkpts0_f.shape == (M, 2)
     assert mkpts1_f.shape == (M, 2)

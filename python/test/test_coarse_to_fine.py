@@ -36,9 +36,15 @@ def test_coarse_to_fine():
     l_ids = torch.tensor([5, 200, 501, 802])
     s_ids = torch.tensor([105, 201, 320, 405])
 
+    coarse_prediction = {
+        "b_ids": batch_ids,
+        "l_ids": l_ids,
+        "s_ids": s_ids,
+    }
+
     model = CoarseToFine(config)
     feat_f1_unfold, feat_f0_unfold = model(
-        feat_f0, feat_f1, feat_c0, feat_c1, batch_ids, l_ids, s_ids
+        feat_f0, feat_f1, feat_c0, feat_c1, coarse_prediction
     )
     valid_len = len(batch_ids)
     assert feat_f1_unfold.shape == (valid_len, window**2, dim_fine)

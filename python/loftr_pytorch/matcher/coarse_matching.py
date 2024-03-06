@@ -70,11 +70,7 @@ class CoarseMatcher(nn.Module):
         self,
         feat0,
         feat1,
-        hw0_c,
-        hw1_c,
-        scale,
-        scale0=None,
-        scale1=None,
+        data,
         mask0=None,
         mask1=None,
     ):
@@ -109,14 +105,10 @@ class CoarseMatcher(nn.Module):
         else:
             raise NotImplemented
 
-        return self._coarse_match(
-            conf_matrix, hw0_c, hw1_c, scale, scale0, scale1, mask0, mask1
-        )
+        return self._coarse_match(conf_matrix, mask0, mask1, data)
 
     @torch.no_grad()
-    def _coarse_match(
-        self, conf_matrix, hw0_c, hw1_c, scale, scale0, scale1, mask0, mask1
-    ):
+    def _coarse_match(self, conf_matrix, mask0, mask1, data):
         """
         Args:
             conf_matrix (torch.Tensor): [B, L, S]
@@ -132,6 +124,7 @@ class CoarseMatcher(nn.Module):
                 'mkpts1_c' (torch.Tensor): [M, 2],
                 'mconf' (torch.Tensor): [M]}
         """
+        hw0_c, hw1_c = data["hw0_c"], data["hw1_c"]
         B, L, S = conf_matrix.shape
         assert (
             L == hw0_c[0] * hw0_c[1] and S == hw1_c[0] * hw1_c[1]
@@ -167,8 +160,9 @@ class CoarseMatcher(nn.Module):
         ## TODO:: Implement sampling for training
 
         # 5. scale indicies up to original resolution
-        scale0 = scale0[b_ids] if scale0 else scale
-        scale1 = scale1[b_ids] if scale1 else scale
+        scale = data["hw0_i"][0] / hw0_c[0]
+        scale0 = scale * data["scale0"][b_ids] if "scale0" in data else scale
+        scale1 = scale * data["scale1"][b_ids] if "scale1" in data else scale
 
         mkpts0 = torch.stack([l_ids % hw0_c[1], l_ids // hw0_c[1]], dim=1) * scale0
         mkpts1 = torch.stack([s_ids % hw1_c[1], s_ids // hw1_c[1]], dim=1) * scale1
@@ -179,4 +173,16 @@ class CoarseMatcher(nn.Module):
         mkpts1_c = mkpts1[mconf != 0]
         mconf = mconf[mconf != 0]
 
-        return b_ids, l_ids, s_ids, gt_mask, m_bids, mkpts0_c, mkpts1_c, mconf
+        prediction = {
+            "b_ids": b_ids,
+            "l_ids": l_ids,
+            "s_ids": s_ids,
+            "gt_mask": gt_mask,
+            "m_bids": m_bids,
+            "mkpts0_c": mkpts0_c,
+            "mkpts1_c": mkpts1_c,
+            "mconf": mconf,
+            "conf_matrix": conf_matrix,
+        }
+
+        return prediction

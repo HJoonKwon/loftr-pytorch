@@ -8,7 +8,7 @@ class FineMatcher(nn.Module):
         super().__init__()
         self.window = window
 
-    def forward(self, feat_f0, feat_f1, mkpts0_c, mkpts1_c, scale):
+    def forward(self, feat_f0, feat_f1, coarse_prediction, data):
         """
         Args:
             feat0 (torch.Tensor): [M, window**2, C]
@@ -20,6 +20,10 @@ class FineMatcher(nn.Module):
                 'mkpts1_f' (torch.Tensor): [M, 2]}
         """
 
+        mkpts0_c, mkpts1_c = (
+            coarse_prediction["mkpts0_c"],
+            coarse_prediction["mkpts1_c"],
+        )
         M, WW, C = feat_f0.shape
         window = int(WW**0.5)
         self.window = window
@@ -53,10 +57,21 @@ class FineMatcher(nn.Module):
 
         # TODO:: expec_f for training
 
-        return self._fine_match(expected_coords, mkpts0_c, mkpts1_c, scale)
+        scale = data["hw0_i"][0] / data["hw0_f"][0]
+        scale1 = scale * data["scale1"] if "scale1" in data else scale
+
+        mkpts0_f, mkpts1_f = self._fine_match(
+            expected_coords, mkpts0_c, mkpts1_c, scale1
+        )
+
+        fine_prediction = {}
+        fine_prediction["mkpts0_f"] = mkpts0_f
+        fine_prediction["mkpts1_f"] = mkpts1_f
+        fine_prediction["expec_f"] = None
+        return fine_prediction
 
     @torch.no_grad()
-    def _fine_match(self, expected_coords, mkpts0_c, mkpts1_c, scale):
+    def _fine_match(self, expected_coords, mkpts0_c, mkpts1_c, scale1):
         mkpts0_f = mkpts0_c
-        mkpts1_f = mkpts1_c + expected_coords * (self.window // 2) * scale
+        mkpts1_f = mkpts1_c + expected_coords * (self.window // 2) * scale1
         return mkpts0_f, mkpts1_f
