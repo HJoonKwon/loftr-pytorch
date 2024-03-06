@@ -24,6 +24,23 @@ class LoFTR(nn.Module):
         self.coarse_to_fine = CoarseToFine(config["coarse_to_fine"])
         self.fine_matcher = FineMatcher()
 
+    def _preprocess_features(self, feat_c0, feat_c1):
+
+        B, _, h0_c, w0_c = feat_c0.shape
+        feat_c0 = (
+            self.position_embedding(feat_c0)
+            .permute(0, 2, 3, 1)
+            .view(B, h0_c * w0_c, -1)
+        )
+        B, _, h1_c, w1_c = feat_c1.shape
+        feat_c1 = (
+            self.position_embedding(feat_c1)
+            .permute(0, 2, 3, 1)
+            .view(B, h1_c * w1_c, -1)
+        )
+
+        return feat_c0, feat_c1
+
     def forward(self, data):
         """
         Args:
@@ -51,24 +68,16 @@ class LoFTR(nn.Module):
         data["hw0_f"] = feat_f0.shape[2:]
         data["hw1_f"] = feat_f1.shape[2:]
 
-        B, _, h0_c, w0_c = feat_c0.shape
-        feat_c0 = (
-            self.position_embedding(feat_c0)
-            .permute(0, 2, 3, 1)
-            .view(B, h0_c * w0_c, -1)
-        )
-        B, _, h1_c, w1_c = feat_c1.shape
-        feat_c1 = (
-            self.position_embedding(feat_c1)
-            .permute(0, 2, 3, 1)
-            .view(B, h1_c * w1_c, -1)
-        )
+        # position embedding and flatten to (B, L, C), (B, S, C)
+        feat_c0, feat_c1 = self._preprocess_features(feat_c0, feat_c1)
+
         mask0 = data["mask0"] if "mask0" in data else None
         mask1 = data["mask1"] if "mask1" in data else None
 
         mask_c0 = mask_c1 = None
         if mask0:
             mask_c0, mask_c1 = mask0.flatten(-2), mask1.flatten(-2)
+
         feat_c0, feat_c1 = self.transformer_coarse(feat_c0, feat_c1, mask_c0, mask_c1)
 
         coarse_prediction = self.coarse_matcher(
