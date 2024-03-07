@@ -4,6 +4,13 @@ Reimplementation of LoFTR in PyTorch, end-to-end transformer model for image mat
 ## Installation
 Pytorch >= 2.2.0 is required. The code is tested with PyTorch 2.2.0 and Python 3.10.13.
 
+## Unit test 
+```CUDA_VISIBLE_DEVICES``` is required to test torch.compile().
+```bash
+cd scripts
+CUDA_VISIBLE_DEVICES=X bash test.sh
+```
+
 ## Differences from the original LoFTR
 - [ ] Remove pytorch lightning dependency for training.
 - [ ] Support torch.compile
