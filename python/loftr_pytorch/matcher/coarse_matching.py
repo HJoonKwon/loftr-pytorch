@@ -71,7 +71,7 @@ class CoarseMatcher(nn.Module):
         feat0,
         feat1,
         data,
-        coarse_gt,
+        coarse_gt=None,
         mask0=None,
         mask1=None,
     ):
