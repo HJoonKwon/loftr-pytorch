@@ -17,5 +17,5 @@ def test_LoFTR():
 
     x0 = torch.rand(1, 1, 256, 256, device=device)
     x1 = torch.rand(1, 1, 256, 256, device=device)
-    data = {"image0": x0, "image1": x1, "hw0_i": (256, 256), "hw1_i": (256, 256)}
-    model(data)
+    data = {"image0": x0, "image1": x1}
+    model(data, None)
