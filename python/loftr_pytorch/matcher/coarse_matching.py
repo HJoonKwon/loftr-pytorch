@@ -71,6 +71,7 @@ class CoarseMatcher(nn.Module):
         feat0,
         feat1,
         data,
+        coarse_gt,
         mask0=None,
         mask1=None,
     ):
@@ -105,10 +106,10 @@ class CoarseMatcher(nn.Module):
         else:
             raise NotImplemented
 
-        return self._coarse_match(conf_matrix, mask0, mask1, data)
+        return self._coarse_match(conf_matrix, mask0, mask1, data, coarse_gt)
 
     @torch.no_grad()
-    def _coarse_match(self, conf_matrix, mask0, mask1, data):
+    def _coarse_match(self, conf_matrix, mask0, mask1, data, coarse_gt):
         """
         Args:
             conf_matrix (torch.Tensor): [B, L, S]
@@ -137,10 +138,12 @@ class CoarseMatcher(nn.Module):
         mask = mask.view(
             B, hw0_c[0], hw0_c[1], hw1_c[0], hw1_c[1]
         )  # (B, L, S) -> (B, h0c, w0c, h1c, w1c)
-        if not mask0:
+        if "mask0" not in data:
             mask_border(mask, self.border_rm, False)
         else:
-            mask_border_with_padding(mask, self.border_rm, False, mask0, mask1)
+            mask_border_with_padding(
+                mask, self.border_rm, False, data["mask0"], data["mask1"]
+            )
         mask = mask.view(B, L, S)
 
         # 3. mutual nearest neighbor
@@ -160,7 +163,7 @@ class CoarseMatcher(nn.Module):
         ## TODO:: Implement sampling for training
 
         # 5. scale indicies up to original resolution
-        scale = data["hw0_i"][0] / hw0_c[0]
+        scale = data["hw0_i"][0] / data["hw0_c"][0]
         scale0 = scale * data["scale0"][b_ids] if "scale0" in data else scale
         scale1 = scale * data["scale1"][b_ids] if "scale1" in data else scale
 
