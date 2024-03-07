@@ -58,7 +58,11 @@ class FineMatcher(nn.Module):
         # TODO:: expec_f for training
 
         scale = data["hw0_i"][0] / data["hw0_f"][0]
-        scale1 = scale * data["scale1"] if "scale1" in data else scale
+        scale1 = (
+            scale * data["scale1"][coarse_prediction["b_ids"]]
+            if "scale1" in data
+            else scale
+        )
 
         mkpts0_f, mkpts1_f = self._fine_match(
             expected_coords, mkpts0_c, mkpts1_c, scale1
