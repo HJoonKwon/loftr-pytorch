@@ -45,10 +45,7 @@ def pad_bottom_right(img, pad_size, ret_mask=False):
 
 
 def load_concatenated_megadepth(base_path, npz_paths, mode, config):
-    datasets = []
-    for npz_path in npz_paths:
-        dataset = MegaDepth(base_path, npz_path, mode, config)
-        datasets.append(dataset)
+    datasets = [MegaDepth(base_path, npz_path, mode, config) for npz_path in npz_paths]
     return ConcatDataset(datasets)
 
 
