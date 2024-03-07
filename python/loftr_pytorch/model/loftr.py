@@ -41,7 +41,7 @@ class LoFTR(nn.Module):
 
         return feat_c0, feat_c1
 
-    def forward(self, data):
+    def forward(self, data, coarse_gt):
         """
         Args:
             data (dict): {
@@ -52,6 +52,8 @@ class LoFTR(nn.Module):
                 }
         """
         image0, image1 = data["image0"], data["image1"]
+        data["hw0_i"] = image0.shape[-2:]
+        data["hw1_i"] = image1.shape[-2:]
 
         if data["hw0_i"] == data["hw1_i"]:  # faster & better BN convergence
             feats_c, feats_f = self.backbone(torch.cat([image0, image1], dim=0))
@@ -74,19 +76,19 @@ class LoFTR(nn.Module):
         mask0 = data["mask0"] if "mask0" in data else None
         mask1 = data["mask1"] if "mask1" in data else None
 
-        mask_c0 = mask_c1 = None
-        if mask0:
-            mask_c0, mask_c1 = mask0.flatten(-2), mask1.flatten(-2)
+        if "mask0" in data:
+            mask0, mask1 = mask0.flatten(-2), mask1.flatten(-2)
 
-        feat_c0, feat_c1 = self.transformer_coarse(feat_c0, feat_c1, mask_c0, mask_c1)
+        feat_c0, feat_c1 = self.transformer_coarse(feat_c0, feat_c1, mask0, mask1)
 
         coarse_prediction = self.coarse_matcher(
-            feat_c0, feat_c1, data, mask_c0, mask_c1
+            feat_c0, feat_c1, data, coarse_gt, mask0, mask1
         )
 
         feat_f0_unfold, feat_f1_unfold = self.coarse_to_fine(
             feat_f0, feat_f1, feat_c0, feat_c1, coarse_prediction
         )
+
         if feat_f0_unfold.shape[0] != 0:
             feat_f0_unfold, feat_f1_unfold = self.transformer_fine(
                 feat_f0_unfold, feat_f1_unfold
