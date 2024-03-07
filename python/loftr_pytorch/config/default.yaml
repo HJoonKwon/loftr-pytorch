@@ -49,7 +49,9 @@ matcher:
     border_rm: 2
     match_type: 'dual_softmax'
     temperature: 0.1
-  
+    gt_pad: True 
+    train_num_gt_pad: 200
+    train_coarse_percent: 0.3
 
 dataset:
   megadepth:
