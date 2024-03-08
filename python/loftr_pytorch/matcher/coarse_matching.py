@@ -170,7 +170,7 @@ class CoarseMatcher(nn.Module):
         s_ids = all_s_ids[b_ids, l_ids]  # all_s_ids = (B, L) filled with s_ids
         mconf = conf_matrix[b_ids, l_ids, s_ids]  # (M, ) where M = len(b_ids)
 
-        if self.training:
+        if self.training and coarse_gt is not None:
             if "mask0" in data:
                 num_max_candidates = compute_num_max_candidates(
                     data["mask0"], data["mask1"]
