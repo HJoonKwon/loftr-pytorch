@@ -51,7 +51,7 @@ matcher:
     temperature: 0.1
     gt_pad: True 
     train_num_gt_pad: 200
-    train_coarse_percent: 0.3
+    train_coarse_percent: 0.4
 
 dataset:
   megadepth:
