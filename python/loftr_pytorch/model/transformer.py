@@ -106,7 +106,7 @@ class LoFTREncoderLayer(nn.Module):
         attn_dropout,
         proj_dropout,
         ffwd_dropout,
-        attention="native",
+        attention="torchsdp",
     ):
         super().__init__()
         self.mhsa = MultiHeadAttention(

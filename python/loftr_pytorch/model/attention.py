@@ -34,13 +34,25 @@ class TorchScaledDotProduct(nn.Module):
         self.attn_dropout = attn_dropout
 
     def forward(self, q, k, v, q_mask=None, kv_mask=None):
-        if kv_mask is not None:
+        if q_mask is not None and kv_mask is not None:
             attn_mask = q_mask[:, None, :, None] * kv_mask[:, None, None, :]
+        elif q_mask is not None:
+            attn_mask = q_mask[:, None, :, None]
+        elif kv_mask is not None:
+            attn_mask = kv_mask[:, None, None, :]
         else:
             attn_mask = None
-        y = torch.nn.functional.scaled_dot_product_attention(
-            q, k, v, attn_mask=attn_mask, dropout_p=self.attn_dropout, is_causal=False
-        )
+       
+        if attn_mask is not None: 
+            with torch.backends.cuda.sdp_kernel(enable_math=False, enable_flash=False, enable_mem_efficient=True):
+                y = torch.nn.functional.scaled_dot_product_attention(
+                    q, k, v, attn_mask=attn_mask, dropout_p=self.attn_dropout, is_causal=False
+                )
+        else:
+            with torch.backends.cuda.sdp_kernel(enable_math=False, enable_flash=True, enable_mem_efficient=False):
+                y = torch.nn.functional.scaled_dot_product_attention(
+                    q, k, v, dropout_p=self.attn_dropout, is_causal=False
+                )
         return y
 
 
