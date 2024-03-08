@@ -166,7 +166,7 @@ class MegaDepth(Dataset):
                 scale_factor=self.coarse_scale,
                 mode="nearest",
                 recompute_scale_factor=False,
-            )[0].bool()
+            )[0]
             data.update({"mask0": mask0, "mask1": mask1})
 
         return data
