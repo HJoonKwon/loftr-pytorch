@@ -16,10 +16,10 @@ class FullAttention(nn.Module):
         weight = q @ k.transpose(-2, -1) * scale  # (B, nh, L, S)
 
         if kv_mask is not None:
-            attn_mask = (q_mask[:, None, :, None] * kv_mask[:, None, None, :] == 0).to(dtype=q_mask.dtype)
-            weight = weight.masked_fill(
-                attn_mask, float("-inf")
+            attn_mask = (q_mask[:, None, :, None] * kv_mask[:, None, None, :] == 0).to(
+                dtype=q_mask.dtype
             )
+            weight = weight.masked_fill(attn_mask, float("-inf"))
         weight = F.softmax(weight, dim=-1)
         weight = self.dropout(weight)
 
@@ -29,6 +29,7 @@ class FullAttention(nn.Module):
 
 
 class TorchScaledDotProduct(nn.Module):
+    # NOTE: https://github.com/pytorch/pytorch/issues/103749, padded_mask should not be torch.bool
     def __init__(self, attn_dropout=0.1):
         super().__init__()
         self.attn_dropout = attn_dropout
@@ -42,14 +43,23 @@ class TorchScaledDotProduct(nn.Module):
             attn_mask = kv_mask[:, None, None, :]
         else:
             attn_mask = None
-       
-        if attn_mask is not None: 
-            with torch.backends.cuda.sdp_kernel(enable_math=False, enable_flash=False, enable_mem_efficient=True):
+
+        if attn_mask is not None:
+            with torch.backends.cuda.sdp_kernel(
+                enable_math=False, enable_flash=False, enable_mem_efficient=True
+            ):
                 y = torch.nn.functional.scaled_dot_product_attention(
-                    q, k, v, attn_mask=attn_mask, dropout_p=self.attn_dropout, is_causal=False
+                    q,
+                    k,
+                    v,
+                    attn_mask=attn_mask,
+                    dropout_p=self.attn_dropout,
+                    is_causal=False,
                 )
         else:
-            with torch.backends.cuda.sdp_kernel(enable_math=False, enable_flash=True, enable_mem_efficient=False):
+            with torch.backends.cuda.sdp_kernel(
+                enable_math=False, enable_flash=True, enable_mem_efficient=False
+            ):
                 y = torch.nn.functional.scaled_dot_product_attention(
                     q, k, v, dropout_p=self.attn_dropout, is_causal=False
                 )
