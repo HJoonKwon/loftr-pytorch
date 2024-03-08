@@ -58,6 +58,13 @@ def mask_border_with_padding(
         input_tensor[b_idx, :, :, :, w1 - border :] = masking_value
 
 
+def compute_num_max_candidates(mask0, mask1):
+    h0s, w0s = mask0.sum(1).max(-1)[0], mask0.sum(-1).max(-1)[0]
+    h1s, w1s = mask1.sum(1).max(-1)[0], mask1.sum(-1).max(-1)[0]
+    num_max_candidates = torch.stack([h0s * w0s, h1s * w1s], -1).min(-1)[0].sum()
+    return num_max_candidates
+
+
 class CoarseMatcher(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -65,13 +72,15 @@ class CoarseMatcher(nn.Module):
         self.border_rm = config["border_rm"]
         self.temperature = config["temperature"]
         self.match_type = config["match_type"]
+        self.train_num_gt_pad = config["train_num_gt_pad"]
+        self.train_coarse_percent = config["train_coarse_percent"]
 
     def forward(
         self,
         feat0,
         feat1,
         data,
-        coarse_gt=None,
+        coarse_gt,
         mask0=None,
         mask1=None,
     ):
@@ -106,10 +115,10 @@ class CoarseMatcher(nn.Module):
         else:
             raise NotImplemented
 
-        return self._coarse_match(conf_matrix, mask0, mask1, data, coarse_gt)
+        return self._coarse_match(conf_matrix, data, coarse_gt)
 
     @torch.no_grad()
-    def _coarse_match(self, conf_matrix, mask0, mask1, data, coarse_gt):
+    def _coarse_match(self, conf_matrix, data, coarse_gt):
         """
         Args:
             conf_matrix (torch.Tensor): [B, L, S]
@@ -127,6 +136,7 @@ class CoarseMatcher(nn.Module):
         """
         hw0_c, hw1_c = data["hw0_c"], data["hw1_c"]
         B, L, S = conf_matrix.shape
+        _device = conf_matrix.device
         assert (
             L == hw0_c[0] * hw0_c[1] and S == hw1_c[0] * hw1_c[1]
         ), "coarse feature dimensions do not match"
@@ -160,7 +170,35 @@ class CoarseMatcher(nn.Module):
         s_ids = all_s_ids[b_ids, l_ids]  # all_s_ids = (B, L) filled with s_ids
         mconf = conf_matrix[b_ids, l_ids, s_ids]  # (M, ) where M = len(b_ids)
 
-        ## TODO:: Implement sampling for training
+        if self.training:
+            if "mask0" in data:
+                num_max_candidates = compute_num_max_candidates(
+                    data["mask0"], data["mask1"]
+                )
+            else:
+                # NOTE: Original implementation used max instead of min
+                num_max_candidates = B * min(L, S)
+            num_matches_train = int(num_max_candidates * self.train_coarse_percent)
+            num_matches_pred = len(b_ids)
+            assert self.train_num_gt_pad < num_matches_train
+
+            pred_indices = self._generate_pred_indices(
+                num_matches_train, num_matches_pred, _device
+            )
+            gt_pad_indices = self._generate_gt_pad_indices(
+                coarse_gt["spv_b_ids"], num_matches_train, num_matches_pred, _device
+            )
+            mconf_gt = torch.zeros(len(coarse_gt["spv_b_ids"]), device=_device)
+
+            b_ids, l_ids, s_ids, mconf = map(
+                lambda x, y: torch.cat([x[pred_indices], y[gt_pad_indices]], dim=0),
+                *zip(
+                    [b_ids, coarse_gt["spv_b_ids"]],
+                    [l_ids, coarse_gt["spv_i_ids"]],
+                    [s_ids, coarse_gt["spv_j_ids"]],
+                    [mconf, mconf_gt],
+                ),
+            )
 
         # 5. scale indicies up to original resolution
         scale = data["hw0_i"][0] / data["hw0_c"][0]
@@ -189,3 +227,17 @@ class CoarseMatcher(nn.Module):
         }
 
         return prediction
+
+    def _generate_pred_indices(self, num_matches_train, num_matches_pred, device):
+        # NOTE: Original implementation used torch.randint which creates duplicate indices
+        # which is not what we want
+        num_samples = min(num_matches_pred, num_matches_train - self.train_num_gt_pad)
+        return torch.randperm(num_matches_pred, device=device)[:num_samples]
+
+    def _generate_gt_pad_indices(
+        self, spv_b_ids, num_matches_train, num_matches_pred, device
+    ):
+        # NOTE: Original implementation used torch.randint which creates duplicate indices
+        num_samples = max(self.train_num_gt_pad, num_matches_train - num_matches_pred)
+        num_samples = min(len(spv_b_ids), num_samples)
+        return torch.randperm(len(spv_b_ids), device=device)[:num_samples]
