@@ -77,5 +77,7 @@ class FineMatcher(nn.Module):
     @torch.no_grad()
     def _fine_match(self, expected_coords, mkpts0_c, mkpts1_c, scale1):
         mkpts0_f = mkpts0_c
-        mkpts1_f = mkpts1_c + expected_coords * (self.window // 2) * scale1
+        mkpts1_f = (
+            mkpts1_c + (expected_coords * (self.window // 2) * scale1)[: len(mkpts1_c)]
+        )
         return mkpts0_f, mkpts1_f
