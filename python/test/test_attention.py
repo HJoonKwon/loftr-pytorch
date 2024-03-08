@@ -37,10 +37,11 @@ def test_TorchScaleDotProduct():
     kv_mask = torch.rand(B, S) > 0.1
 
     # test memory efficient attention
-    y = attn(q, k, v, q_mask.to(device), kv_mask.to(device))
+    y = attn(q, k, v, q_mask.type(q.dtype).to(device), kv_mask.type(k.dtype).to(device))
     assert y.shape == (B, n_heads, L, n_embd // n_heads)
 
     # test flash attention
+    q, k, v = q.half(), k.half(), v.half()
     y = attn(q, k, v, None, None)
     assert y.shape == (B, n_heads, L, n_embd // n_heads)
 
