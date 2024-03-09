@@ -43,19 +43,19 @@ class FineMatcher(nn.Module):
         pos_x = torch.linspace(0, window - 1, window, device=feat_f0.device)
         pos_x = (pos_x / (window - 1) - 0.5) * 2.0
         pos_y = pos_x.clone()
-        grid_x, grid_y = torch.stack(
-            torch.meshgrid(pos_x, pos_y, indexing="ij")
-        ).transpose(1, 2)
-        grid_x = grid_x.reshape(-1)  # (window**2)
-        grid_y = grid_y.reshape(-1)
 
-        expected_x = torch.sum(
-            (grid_x * score_matrix), dim=-1, keepdim=True
-        )  # vectorization, (M, 1)
-        expected_y = torch.sum((grid_y * score_matrix), dim=-1, keepdim=True)  # (M, 1)
-        expected_coords = torch.concat([expected_x, expected_y], dim=-1)  # (M,2)
+        grid_xy = (
+            torch.stack(torch.meshgrid(pos_x, pos_y, indexing="ij"))
+            .transpose(1, 2)
+            .reshape(-1, window**2)
+        )  # (2, window**2)
+        expected_xy = (
+            score_matrix @ grid_xy.T
+        )  # (M, window**2) @ (window**2, 2) = (M, 2)
 
-        # TODO:: expec_f for training
+        var_xy = score_matrix @ (grid_xy**2).T - (expected_xy**2)  # (M, 2)
+        std_xy = (var_xy.sum(-1) + 1e-10).sqrt()
+        expect_f = torch.cat([expected_xy, std_xy[:, None]], dim=-1)  # (M, 3)
 
         scale = data["hw0_i"][0] / data["hw0_f"][0]
         scale1 = (
@@ -64,14 +64,12 @@ class FineMatcher(nn.Module):
             else scale
         )
 
-        mkpts0_f, mkpts1_f = self._fine_match(
-            expected_coords, mkpts0_c, mkpts1_c, scale1
-        )
+        mkpts0_f, mkpts1_f = self._fine_match(expected_xy, mkpts0_c, mkpts1_c, scale1)
 
         fine_prediction = {}
         fine_prediction["mkpts0_f"] = mkpts0_f
         fine_prediction["mkpts1_f"] = mkpts1_f
-        fine_prediction["expec_f"] = None
+        fine_prediction["expec_f"] = expect_f
         return fine_prediction
 
     @torch.no_grad()
