@@ -93,10 +93,11 @@ trainer:
       focal_gamma: 2.0
       pos_weight: 1.0
       neg_weight: 1.0
+      spv_score_thr: 0.1 # for filtering valid coarse-level gt pairs. Fine level gts are filtered by correct_threshold, anyway.
     fine:
       type: 'l2_with_std' #[ 'l2_with_std', 'l2']
       weight: 1.0
-      correct_threshold: 1.0 # for filtering valid fine-level gts (some gt matches might fall out of the fine-level window)
+      correct_thr: 1.0 # for filtering valid fine-level gts (some gt matches might fall out of the fine-level window)
 
 
       
