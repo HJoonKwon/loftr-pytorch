@@ -30,7 +30,13 @@ class LoFTRLoss(nn.Module):
             self.fine_config["weight"],
         )
         loss = coarse_weight * coarse_loss + fine_weight * fine_loss
-        return loss
+
+        loss_dict = {
+            "coarse_loss": coarse_loss.item(),
+            "fine_loss": fine_loss.item(),
+            "loss": loss,
+        }
+        return loss_dict
 
     def compute_coarse_loss(self, conf_matrix, conf_matrix_gt, spv_scores, data):
         """
@@ -56,14 +62,15 @@ class LoFTRLoss(nn.Module):
             self.coarse_config["neg_weight"],
         )
 
-        spv_score_mask = (
-            spv_scores >= self.coarse_config["spv_score_thr"]
-        ).float()  # (B,)
+        spv_score_mask = spv_scores >= self.coarse_config["spv_score_thr"]  # (B,)
+
+        pos_mask = pos_mask * spv_score_mask[:, None, None]
+        neg_mask = neg_mask * spv_score_mask[:, None, None]
         conf_matrix = torch.clamp(conf_matrix, 1e-6, 1 - 1e-6)
 
         if self.coarse_config["type"] == "cross_entropy":
-            loss_pos = -torch.log(conf_matrix[pos_mask]) * spv_score_mask
-            loss_neg = -torch.log(1 - conf_matrix[neg_mask]) * spv_score_mask
+            loss_pos = -torch.log(conf_matrix[pos_mask])
+            loss_neg = -torch.log(1 - conf_matrix[neg_mask])
             if weight_mask is not None:
                 loss_pos = loss_pos * weight_mask[pos_mask]
                 loss_neg = loss_neg * weight_mask[neg_mask]
@@ -75,13 +82,11 @@ class LoFTRLoss(nn.Module):
                 -alpha
                 * (1 - conf_matrix[pos_mask]) ** gamma
                 * torch.log(conf_matrix[pos_mask])
-                * spv_score_mask
             )
             loss_neg = (
                 -alpha
                 * conf_matrix[neg_mask] ** gamma
                 * torch.log(1 - conf_matrix[neg_mask])
-                * spv_score_mask
             )
             if weight_mask is not None:
                 loss_pos = loss_pos * weight_mask[pos_mask]
