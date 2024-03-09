@@ -162,5 +162,5 @@ def spvs_fine(data, coarse_gt, coarse_prediction, config):
     grid_pt1_i = coarse_gt["spv_pt1_i"][b_ids, s_ids]
 
     expec_f_gt = (wpts0_i - grid_pt1_i) / scale1 / radius
-    fine_gt = {"expec_f": expec_f_gt}
+    fine_gt = {"expec_f_gt": expec_f_gt}
     return fine_gt
