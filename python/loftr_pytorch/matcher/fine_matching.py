@@ -54,7 +54,7 @@ class FineMatcher(nn.Module):
         )  # (M, window**2) @ (window**2, 2) = (M, 2)
 
         var_xy = score_matrix @ (grid_xy**2).T - (expected_xy**2)  # (M, 2)
-        std_xy = (var_xy.sum(-1) + 1e-10).sqrt()
+        std_xy = torch.clamp(var_xy.sum(-1), min=1e-10).sqrt()
         expect_f = torch.cat([expected_xy, std_xy[:, None]], dim=-1)  # (M, 3)
 
         scale = data["hw0_i"][0] / data["hw0_f"][0]
