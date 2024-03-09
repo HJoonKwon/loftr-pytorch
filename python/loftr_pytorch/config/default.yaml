@@ -85,5 +85,18 @@ trainer:
     shuffle: True 
     repeat: 1
     seed: 42
+  loss:
+    coarse:
+      type: 'focal' # ['focal', 'cross_entropy']
+      weight: 1.0
+      focal_alpha: 0.25
+      focal_gamma: 2.0
+      pos_weight: 1.0
+      neg_weight: 1.0
+    fine:
+      type: 'l2_with_std' #[ 'l2_with_std', 'l2']
+      weight: 1.0
+      correct_threshold: 1.0 # for filtering valid fine-level gts (some gt matches might fall out of the fine-level window)
+
 
       
