@@ -17,7 +17,7 @@ CUDA_VISIBLE_DEVICES=X bash test.sh
 - [x] Customized distributed sampler to enable DDP training.
 - [x] Instead of einops, torch native functions are used for dealing with dimensions.
 - [x] Enable Flash Attention and Memory Attention, which are known to be faster and more efficient.
-- [x] The original position embedding seems wrong refering to the DETR paper and its implementation. The current implementation uses the same position embedding as DETR, while keeping the dimension handling of the original LoFTR.
+- [x] Fix Position Embedding based on DETR's one. 
 - [x] Add unit tests for improving readability and understanding.
 - [ ] border_rm is constant in the original LoFTR, but it should change according to the window size..(?). No problem with border_rm = 2 when window_size = 5 because padding is 2 for fine preprocessing.
 - [ ] The original LoFTR's transformer encoder uses Post-LayerNorm, while the current implementation uses Pre-LayerNorm, which is known to be more stable and faster from the recent literature.
