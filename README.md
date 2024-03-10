@@ -12,7 +12,7 @@ CUDA_VISIBLE_DEVICES=X bash test.sh
 ```
 
 ## Differences from the original LoFTR
-- [-] Remove pytorch lightning dependency for training.
+- [ ] Remove pytorch lightning dependency for training.
 - [x] Make the LoFTR model compilable to accelerate both inference and training speed.
 - [x] Customized distributed sampler to enable DDP training.
 - [x] Instead of einops, torch native functions are used for dealing with dimensions.
