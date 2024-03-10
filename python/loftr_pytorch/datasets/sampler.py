@@ -131,7 +131,7 @@ class RandomConcatSampler(Sampler):
         subset_replacement: bool = True,
         shuffle: bool = True,
         repeat: int = 1,
-        seed: int = None,
+        seed: int = 0,
     ):
         assert isinstance(
             dataset, ConcatDataset
@@ -145,6 +145,8 @@ class RandomConcatSampler(Sampler):
         self.subset_replacement = subset_replacement
         self.repeat = repeat
         self.shuffle = shuffle
+        self.seed = seed
+        self.epoch = 0 
         self.generator = torch.Generator()
         self.generator.manual_seed(seed)
 
@@ -152,6 +154,7 @@ class RandomConcatSampler(Sampler):
         return self.n_samples
 
     def __iter__(self):
+        self.generator.manual_seed(self.seed + self.epoch)
         indices = []
         # sample from each sub-dataset
         for d_idx in range(self.n_subset):
@@ -184,3 +187,6 @@ class RandomConcatSampler(Sampler):
 
     def _random_permute(self, x):
         return x[torch.randperm(len(x), generator=self.generator)]
+    
+    def set_epoch(self, epoch):
+        self.epoch = epoch
