@@ -16,7 +16,7 @@ CUDA_VISIBLE_DEVICES=X bash test.sh
 - [x] Make the LoFTR model compilable to accelerate both inference and training speed.
 - [x] Customized distributed sampler to enable DDP training.
 - [x] Instead of einops, torch native functions are used for dealing with dimensions.
-- [x] The attention mechanism implemented in Pytorch is used instead of the original attention mechanism. The recent one includes Flash Attention and Memory Attention, which are known to be more faster and efficient.
+- [x] Enable Flash Attention and Memory Attention, which are known to be faster and more efficient.
 - [x] The original position embedding seems wrong refering to the DETR paper and its implementation. The current implementation uses the same position embedding as DETR, while keeping the dimension handling of the original LoFTR.
 - [x] Add unit tests for improving readability and understanding.
 - [ ] border_rm is constant in the original LoFTR, but it should change according to the window size..(?). No problem with border_rm = 2 when window_size = 5 because padding is 2 for fine preprocessing.
