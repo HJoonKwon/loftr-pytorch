@@ -7,8 +7,29 @@ Pytorch >= 2.2.0 is required. The code is tested with PyTorch 2.2.0 and Python 3
 ## Unit test 
 ```CUDA_VISIBLE_DEVICES``` is required to test torch.compile().
 ```bash
-cd scripts
-CUDA_VISIBLE_DEVICES=X bash test.sh
+$ cd scripts
+$ CUDA_VISIBLE_DEVICES=X bash test.sh
+```
+
+## DDP Training
+**NOTE**: If zero-loss is printed, it means the given batch has no valid matches. This is not a bug, but a feature of the model. The model is not updated because gradients are zero in this case. 
+```bash
+$ cd python
+$ python train_ddp.py --help
+usage: train_ddp.py [-h] [--batch_size BATCH_SIZE] [--lr LR] base_path total_epochs save_every
+
+simple distributed training job
+
+positional arguments:
+  base_path             Path to the MegaDepth dataset
+  total_epochs          Total epochs to train the model
+  save_every            How often to save a snapshot
+
+options:
+  -h, --help            show this help message and exit
+  --batch_size BATCH_SIZE
+                        Input batch size on each device (default: 2)
+  --lr LR               Initial learning rate (default: 1e-4)
 ```
 
 ## Differences from the original LoFTR
