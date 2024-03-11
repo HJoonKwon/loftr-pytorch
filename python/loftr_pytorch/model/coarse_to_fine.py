@@ -46,7 +46,7 @@ class CoarseToFine(nn.Module):
         )
 
         if b_ids.shape[0] == 0:
-            feat0 = torch.empty(0, self.window**3, self.dim_fine, device=feat_f0.device)
+            feat0 = torch.empty(0, self.window**2, self.dim_fine, device=feat_f0.device)
             feat1 = torch.empty(0, self.window**2, self.dim_fine, device=feat_f0.device)
             return feat0, feat1
 
