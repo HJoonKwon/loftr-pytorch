@@ -12,7 +12,7 @@ $ CUDA_VISIBLE_DEVICES=X bash test.sh
 ```
 
 ## DDP Training
-**NOTE**: If zero-loss is printed, it means the given batch has no valid matches. This is not a bug, but a feature of the model. The model is not updated because gradients are zero in this case. 
+**NOTE**: If zero-loss is printed, it means the given batch has no valid matches. This is not a bug, but a design to prevent DDP deadlock. The model is not updated because gradients are zero in this case. 
 ```bash
 $ cd python
 $ python train_ddp.py --help
