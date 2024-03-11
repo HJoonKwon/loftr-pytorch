@@ -44,6 +44,11 @@ class LoFTRLoss(nn.Module):
         Returns:
         """
 
+        pos_weight, neg_weight = (
+            self.coarse_config["pos_weight"],
+            self.coarse_config["neg_weight"],
+        )
+
         weight_mask = None
         if "mask0" in data:
             weight_mask = (
@@ -55,18 +60,25 @@ class LoFTRLoss(nn.Module):
             conf_matrix_gt == 1,
             conf_matrix_gt == 0,
         )  # (B, H0*W0, H1*W1)
-        assert pos_mask.any() or neg_mask.any(), "No groundtruth found"
-
-        pos_weight, neg_weight = (
-            self.coarse_config["pos_weight"],
-            self.coarse_config["neg_weight"],
-        )
 
         spv_score_mask = spv_scores >= self.coarse_config["spv_score_thr"]  # (B,)
 
         pos_mask = pos_mask * spv_score_mask[:, None, None]
         neg_mask = neg_mask * spv_score_mask[:, None, None]
         conf_matrix = torch.clamp(conf_matrix, 1e-6, 1 - 1e-6)
+
+        if pos_mask.sum() == 0:
+            pos_mask[0, 0, 0] = True
+            if "mask0" in data:
+                weight_mask[0, 0, 0] = 0
+            pos_weight = 0
+            print("No positive mask found")
+        if neg_mask.sum() == 0:
+            neg_mask[0, 0, 0] = True
+            if "mask0" in data:
+                weight_mask[0, 0, 0] = 0
+            neg_weight = 0
+            print("No negative mask found")
 
         if self.coarse_config["type"] == "cross_entropy":
             loss_pos = -torch.log(conf_matrix[pos_mask])
@@ -132,9 +144,11 @@ class LoFTRLoss(nn.Module):
             torch.linalg.norm(expec_f_gt, ord=float("inf"), dim=1)
             < self.fine_config["correct_thr"]
         )
-        assert correct_mask.sum() > 0, "No correct fine matches found"
         std = expec_f[:, 2]  # (M,)
         inverse_std = 1 / std
         weight = (inverse_std / inverse_std.mean()).detach()
+        if correct_mask.sum() == 0:
+            correct_mask[0] = True
+            weight[0] = 0
         l2_loss = ((expec_f[correct_mask, :2] - expec_f_gt[correct_mask]) ** 2).sum(-1)
         return (l2_loss * weight[correct_mask]).mean()

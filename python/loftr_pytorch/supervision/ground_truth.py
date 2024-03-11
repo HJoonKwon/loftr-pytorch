@@ -126,10 +126,9 @@ def spvs_coarse(data, config):
     if len(b_ids) == 0:
         print(f"No groundtruth coarse match found for: {data['pair_names']}")
         # this won't affect fine-level loss calculation
-        # TODO:: check whether this is a good idea
-        b_ids = torch.empty(0)
-        i_ids = torch.empty(0)
-        j_ids = torch.empty(0)
+        b_ids = torch.zeros(1, dtype=torch.long)
+        i_ids = torch.zeros(1, dtype=torch.long)
+        j_ids = torch.zeros(1, dtype=torch.long)
 
     coarse_gt = {
         "conf_matrix_gt": conf_matrix_gt,
