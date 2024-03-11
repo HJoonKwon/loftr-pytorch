@@ -32,8 +32,13 @@ options:
   --lr LR               Initial learning rate (default: 1e-4)
 ```
 
+## WIP
+- [ ] Implement metrics for evaluation.
+- [ ] Integrate W&B for monitoring the training.
+- [ ] Implement test script for evaluating the model.
+
 ## Differences from the original LoFTR
-- [ ] Remove pytorch lightning dependency for training.
+- [x] Remove pytorch lightning dependency for training.
 - [x] Make the LoFTR model compilable to accelerate both inference and training speed.
 - [x] Customized distributed sampler to enable DDP training.
 - [x] Instead of einops, torch native functions are used for dealing with dimensions.
