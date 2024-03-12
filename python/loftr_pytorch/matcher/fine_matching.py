@@ -31,7 +31,12 @@ class FineMatcher(nn.Module):
             assert (
                 self.training == False
             ), "M is always >0, when training, see coarse_matching.py"
-            return mkpts0_c, mkpts1_c
+            fine_prediction = {
+                "expec_f": torch.empty(0, 3, device=feat_f0.device),
+                "mkpts0_f": data["mkpts0_c"],
+                "mkpts1_f": data["mkpts1_c"],
+            }
+            return fine_prediction
 
         feat_f0_middle = feat_f0[:, window // 2, :]  # (M, C)
         score_matrix = feat_f0_middle[:, None, :] @ feat_f1.transpose(
