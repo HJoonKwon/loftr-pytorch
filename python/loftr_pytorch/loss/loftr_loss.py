@@ -150,5 +150,10 @@ class LoFTRLoss(nn.Module):
         if correct_mask.sum() == 0:
             correct_mask[0] = True
             weight[0] = 0
+
+        # Clamping does not affect the gradient because mask is already applied
+        # It's just to avoid NaNs (numerical overflow)
+        expec_f_gt = torch.clamp(expec_f_gt, -1, 1)
+
         l2_loss = ((expec_f[correct_mask, :2] - expec_f_gt[correct_mask]) ** 2).sum(-1)
         return (l2_loss * weight[correct_mask]).mean()
